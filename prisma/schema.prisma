@@ -1,0 +1,122 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  email    String @unique
+  password String
+
+  submissions Submission[]
+
+  createdAt DateTime @default(now())
+}
+model Problem {
+  id Int @id @default(autoincrement())
+
+  title       String
+  statement   String
+
+  difficulty  Difficulty
+
+  example     String
+  constraints String
+
+  timeLimit   Int @default(1000) // ms
+  memoryLimit Int @default(256)  // MB
+
+  submissions Submission[]
+
+  contestProblems ContestProblem[]
+
+  testCases TestCase[]
+
+  createdAt DateTime @default(now())
+}
+model Submission {
+  id Int @id @default(autoincrement())
+
+  code String
+
+  language Language
+
+  verdict Verdict?
+
+  executionTime Int?
+  memoryUsed Int?
+
+  userId Int
+  problemId Int
+
+  user User @relation(fields: [userId], references: [id])
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+model Contest {
+  id Int @id @default(autoincrement())
+
+  title String
+
+  startTime DateTime
+  endTime DateTime
+
+  problems ContestProblem[]
+
+  createdAt DateTime @default(now())
+}
+
+model ContestProblem {
+  contestId Int
+  problemId Int
+
+  contest Contest @relation(fields: [contestId], references: [id])
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  @@id([contestId, problemId])
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+enum Verdict {
+  PENDING
+  AC
+  WA
+  TLE
+  MLE
+  RE
+  CE
+}
+
+enum Language {
+  CPP
+  JAVA
+  PYTHON
+  JAVASCRIPT
+}
+
+model TestCase {
+  id Int @id @default(autoincrement())
+
+  input String
+  output String
+
+  isHidden Boolean @default(false)
+
+  problemId Int
+
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  createdAt DateTime @default(now())
+}

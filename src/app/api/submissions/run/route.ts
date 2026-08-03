@@ -61,24 +61,6 @@ const result =
     }
   );
 
-  const verdict =
-  result.allPassed
-    ? "AC"
-    : result.results.find(
-        r => r.verdict !== "AC"
-      )?.verdict ?? "WA";
-
-
-      await prisma.submission.create({
-  data: {
-    code,
-    language,
-    problemId,
-    userId: 1,
-    verdict,
-  },
-});
-
   console.log(result);
   return Response.json(result);
 }

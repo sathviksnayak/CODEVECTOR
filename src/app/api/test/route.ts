@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
+// import { executeCpp } from "@/lib/executeCpp";
 
-export async function GET() {
-  const users = await prisma.user.findMany();
+// export async function GET() {
 
-  return Response.json(users);
-}
+
+//   return Response.json({ message: "Hello from the submissions API!" });
+// }

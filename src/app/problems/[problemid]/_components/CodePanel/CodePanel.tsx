@@ -23,7 +23,7 @@ export default function CodePanel({ problemId }: { problemId: string }) {
     }),
   });
 
-  setSubmissionResult(response.status===200 ? "Submission successful" : "Submission failed");
+  setSubmissionResult(await response.text());
 };
 
 const run =async () =>{

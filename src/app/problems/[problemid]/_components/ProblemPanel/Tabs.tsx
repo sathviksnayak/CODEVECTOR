@@ -1,9 +1,10 @@
 "use client";
 import DescriptionTab from "./DescriptionTab";
 import TestCasesTab from "./TestCasesTab";
+import SubmissionTab from "./SubmissionsTab";
 import { useState } from "react";
 
-export default function ProblemTabs({ data }: { data: any }) {
+export default function ProblemTabs({ data,submissions }: { data: any; submissions: any[] }) {
   const [activeTab, setActiveTab] = useState("description");
 
   return (
@@ -20,6 +21,12 @@ export default function ProblemTabs({ data }: { data: any }) {
   >
     Test Cases
   </button>
+
+  <button
+    onClick={() => setActiveTab("submissions")}
+  >
+    Submissions
+  </button>
 </div>
 
       <div>
@@ -29,6 +36,11 @@ export default function ProblemTabs({ data }: { data: any }) {
 
         {activeTab === "testcases" && (
           <TestCasesTab testCases={data.testCases} />
+        )}
+
+
+        {activeTab === "submissions" && (
+          <SubmissionTab problemId={data.id} submissions={submissions} />
         )}
       </div>
     </div>

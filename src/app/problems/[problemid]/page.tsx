@@ -6,11 +6,15 @@ export default async function Page({ params }: { params: Promise<{ problemid: st
 
         const problem= await fetch(`http://localhost:3000/api/problems/${problemid}`)
         const data = await problem.json();
-        
-
+      const submissionsResponse =
+  await (
+    await fetch(
+      `http://localhost:3000/api/submissions?problemId=${problemid}`
+    )
+  ).json();
 
   return (
-    <ProblemPageContent problem={data} />
+    <ProblemPageContent problem={data} submissions={submissionsResponse} />
   );
 
 

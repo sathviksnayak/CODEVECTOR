@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import {  executeCppWithTestCases } from "@/lib/executeCpp";
 import path from "path";
 import fs from "fs/promises";
+
+
 export async function POST(req: Request) {
   const body = await req.json();
 
@@ -81,4 +83,25 @@ const result =
 
   console.log(result);
   return Response.json(result);
+}
+
+
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+
+  const problemId = searchParams.get("problemId");
+
+  const submissions =
+    await prisma.submission.findMany({
+      where: {
+        problemId: Number(problemId),
+        userId: 1, 
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+  return Response.json(submissions);
 }

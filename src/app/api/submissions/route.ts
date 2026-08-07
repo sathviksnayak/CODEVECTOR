@@ -2,10 +2,18 @@ import { prisma } from "@/lib/prisma";
 import {  executeCppWithTestCases } from "@/lib/executeCpp";
 import path from "path";
 import fs from "fs/promises";
-
+import { getUser } from "@/lib/getUser";
 
 export async function POST(req: Request) {
   const body = await req.json();
+    const payload = await getUser();
+
+  if (!payload) {
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
 
   const code=body.code;
   const language=body.language;
@@ -71,15 +79,16 @@ const result =
       )?.verdict ?? "WA";
 
 
-      await prisma.submission.create({
-  data: {
-    code,
-    language,
-    problemId,
-    userId: 1,
-    verdict,
-  },
-});
+  await prisma.submission.create({
+    data: {
+      code,
+      language,
+      problemId,
+      userId: payload.id,
+      verdict,
+    },
+  });
+
 
   console.log(result);
   return Response.json(result);
@@ -88,20 +97,27 @@ const result =
 
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
+  const payload = await getUser();
 
+  if (!payload) {
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const { searchParams } = new URL(req.url);
   const problemId = searchParams.get("problemId");
 
-  const submissions =
-    await prisma.submission.findMany({
-      where: {
-        problemId: Number(problemId),
-        userId: 1, 
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+  const submissions = await prisma.submission.findMany({
+    where: {
+      problemId: Number(problemId),
+      userId: payload.id,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return Response.json(submissions);
 }

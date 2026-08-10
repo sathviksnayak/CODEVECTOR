@@ -1,5 +1,4 @@
-import ProblemPageContent from "@/app/problems/[problemid]/ProblemPageContent";
-
+import ContestProblemPageContent from "./ContestProblemPageContent";
 
 async function ContestProblemPage({
   params,
@@ -18,10 +17,18 @@ async function ContestProblemPage({
     }
   );
 
-  const problem = await res.json();
+  if (!res.ok) {
+    return <div>Problem not found</div>;
+  }
+
+  const data = await res.json();
 
   return (
-  <ProblemPageContent problem={problem} />
+    <ContestProblemPageContent
+      problem={data.problem}
+      contest={data.contest}
+      contestId={Number(contestid)}
+    />
   );
 }
 

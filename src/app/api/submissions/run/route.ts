@@ -1,70 +1,85 @@
-import { prisma } from "@/lib/prisma";  
-import {  executeCppWithTestCases } from "@/lib/executeCpp";
+import { prisma } from "@/lib/prisma";
+import { executeCppWithTestCases } from "@/lib/executeCpp";
 import path from "path";
 import fs from "fs/promises";
+import { getUser } from "@/lib/getUser";
+
 export async function POST(req: Request) {
-  
+  const payload = await getUser();
+
+  if (!payload) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
+  const { code, language, problemId } = body;
 
-  const code=body.code;
-  const language=body.language;
-  const problemId=body.problemId;
+  if (!code || !problemId) {
+    return Response.json(
+      { error: "Missing code or problemId" },
+      { status: 400 }
+    );
+  }
 
+  const problem = await prisma.problem.findUnique({
+    where: {
+      id: Number(problemId), // fixed: was a raw string before
+    },
+    include: {
+      testCases: true,
+    },
+  });
 
+  if (!problem) {
+    return Response.json(
+      { error: "Problem not found" },
+      { status: 404 }
+    );
+  }
 
+  /*
+   * Create temporary source file
+   */
+  await fs.mkdir(path.join(process.cwd(), "temp"), { recursive: true });
 
-await fs.mkdir(
-  path.join(process.cwd(), "temp"),
-  { recursive: true }
+  const fileName = `run-${Date.now()}.cpp`;
+  const filePath = path.join(process.cwd(), "temp", fileName);
+  const relativePath = `temp/${fileName}`;
+
+  await fs.writeFile(filePath, code);
+
+const runTestCaseCount = Math.max(
+  1,
+  Math.ceil(problem.testCases.length / 3)
 );
 
-const fileName = `submission-${Date.now()}.cpp`;
-
-const filePath = path.join(
-  process.cwd(),
-  "temp",
-  fileName
-);
-
-const relativePath = `temp/${fileName}`;
-
-await fs.writeFile(filePath, code);
-
-const problem = await prisma.problem.findUnique({
-  where: {
-    id: problemId,
-  },
-  include: {
-    testCases: true,
-  },
-});
-
-if (!problem) {
-  return Response.json(
-    { error: "Problem not found" },
-    { status: 404 }
-  );
-}
-
-const formattedTestCases =
-  problem.testCases.map(tc => ({
+const formattedTestCases = problem.testCases
+  .slice(0, runTestCaseCount)
+  .map((tc) => ({
     input: tc.input,
     expectedOutput: tc.output,
   }));
 
-const result =
-  await executeCppWithTestCases(
-    relativePath,
-    formattedTestCases,
-    {
-      timeLimit: problem.timeLimit,
-      memoryLimit: problem.memoryLimit,
-    }
-  );
+  let result;
+  try {
+    result = await executeCppWithTestCases(
+      relativePath,
+      formattedTestCases,
+      {
+        timeLimit: problem.timeLimit,
+        memoryLimit: problem.memoryLimit,
+      }
+    );
+  } catch (err: any) {
+    // e.g. compiler crash / unexpected executor failure
+    await fs.unlink(filePath).catch(() => {});
+    return Response.json(
+      { error: "Execution failed", details: err?.message ?? String(err) },
+      { status: 500 }
+    );
+  }
 
-  console.log(result);
+  await fs.unlink(filePath).catch(() => {});
+
   return Response.json(result);
 }
-
-
-

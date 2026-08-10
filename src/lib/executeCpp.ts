@@ -11,8 +11,8 @@ export interface TestCase {
 }
 
 export interface RunConstraints {
-  timeLimit?: number;
-  memoryLimit?: number;
+  timeLimit?: number;   // milliseconds
+  memoryLimit?: number;  // MB
 }
 
 export interface TestResult {
@@ -21,85 +21,384 @@ export interface TestResult {
   expectedOutput: string;
   actualOutput: string;
   stderr?: string;
+
+  executionTime?: number; // milliseconds
+  memoryUsed?: number | null; // KB
 }
 
-const normalize = (s: string) => s.trim().replace(/\r\n/g, "\n");
+const normalize = (s: string) =>
+  s.trim().replace(/\r\n/g, "\n");
 
 export async function executeCppWithTestCases(
   filePath: string,
   testCases: TestCase[],
   constraints: RunConstraints = {}
 ) {
-  const timeLimit = constraints.timeLimit ?? 2;
-  const memoryLimit = constraints.memoryLimit ?? 256;
+  const timeLimitMs =
+    constraints.timeLimit ?? 2000;
+
+  const memoryLimitMb =
+    constraints.memoryLimit ?? 256;
+
+  const timeLimitSeconds =
+    timeLimitMs / 1000;
 
   const jobId = `main-${Date.now()}`;
-  const executablePath = path.posix.join("temp", jobId);
 
+  const executablePath =
+    path.posix.join("temp", jobId);
+
+  /*
+   * Compile
+   */
   try {
-    const compileCommand = `docker run --rm -v "${process.cwd()}:/app" -w /app gcc:latest bash -c "g++ ${filePath} -O2 -std=c++17 -o ${executablePath}"`;
-    await execAsync(compileCommand, { timeout: 15000 });
+    const compileCommand =
+      `docker run --rm ` +
+      `-v "${process.cwd()}:/app" ` +
+      `-w /app ` +
+      `gcc:latest ` +
+      `bash -c "g++ ${filePath} -O2 -std=c++17 -o ${executablePath}"`;
+
+    await execAsync(compileCommand, {
+      timeout: 15000,
+    });
+
   } catch (error: any) {
+
+    /*
+     * Compilation failed.
+     *
+     * Remove executable just in case
+     * something was partially created.
+     */
+    await fs.rm(
+      path.join(process.cwd(), executablePath),
+      { force: true }
+    );
+
     return {
-      compileError: error.stderr || error.message,
+      compileError:
+        error.stderr ||
+        error.message ||
+        "Compilation failed",
+
       results: [],
       allPassed: false,
+
+      executionTime: null,
+      memoryUsed: null,
     };
   }
 
   const results: TestResult[] = [];
 
-  for (let i = 0; i < testCases.length; i++) {
-    const tc = testCases[i];
+  /*
+   * Run test cases
+   *
+   * IMPORTANT:
+   * The finally block below removes the
+   * compiled executable after ALL test cases
+   * finish, regardless of what happens.
+   */
+  try {
 
-    // Write input to a real file — no shell quoting involved at all
-    const inputFileName = `${jobId}-input-${i}.txt`;
-    const inputFileHost = path.join(process.cwd(), "temp", inputFileName);
-    const inputFileContainer = path.posix.join("temp", inputFileName);
+    for (
+      let i = 0;
+      i < testCases.length;
+      i++
+    ) {
 
-    await fs.writeFile(inputFileHost, tc.input);
+      const tc = testCases[i];
 
-    // Redirect stdin FROM the file instead of piping through printf
-    const runCommand = `docker run --rm --memory=${memoryLimit}m --memory-swap=${memoryLimit}m -v "${process.cwd()}:/app" -w /app gcc:latest bash -c "timeout ${timeLimit}s ./${executablePath} < ${inputFileContainer}"`;
+      const inputFileName =
+        `${jobId}-input-${i}.txt`;
 
-    try {
-      const { stdout, stderr } = await execAsync(runCommand, {
-        timeout: (timeLimit + 3) * 1000,
-      });
+      const inputFileHost =
+        path.join(
+          process.cwd(),
+          "temp",
+          inputFileName
+        );
 
-      const passed = normalize(stdout) === normalize(tc.expectedOutput);
+      const inputFileContainer =
+        path.posix.join(
+          "temp",
+          inputFileName
+        );
 
-      results.push({
-        verdict: passed ? "AC" : "WA",
-        input: tc.input,
-        expectedOutput: tc.expectedOutput,
-        actualOutput: stdout,
-        stderr,
-      });
-    } catch (error: any) {
-      const stderr = error.stderr || error.message || "";
-      let verdict: TestResult["verdict"] = "RE";
+      await fs.writeFile(
+        inputFileHost,
+        tc.input
+      );
 
-      if (error.killed || error.code === 124) {
-        verdict = "TLE";
-      } else if (error.code === 137) {
-        verdict = /oom|memory|killed/i.test(stderr) ? "MLE" : "TLE";
+      /*
+       * Bash's built-in time.
+       *
+       * Example:
+       * __TIME__:0.003
+       */
+      const runCommand =
+        `docker run --rm ` +
+        `--memory=${memoryLimitMb}m ` +
+        `--memory-swap=${memoryLimitMb}m ` +
+        `-v "${process.cwd()}:/app" ` +
+        `-w /app ` +
+        `gcc:latest ` +
+        `bash -c "` +
+        `TIMEFORMAT='__TIME__:%R'; ` +
+        `time timeout ${timeLimitSeconds}s ` +
+        `./${executablePath} ` +
+        `< ${inputFileContainer}` +
+        `"`;
+
+
+      try {
+
+        const {
+          stdout,
+          stderr,
+        } = await execAsync(
+          runCommand,
+          {
+            /*
+             * Give Docker some overhead.
+             */
+            timeout:
+              timeLimitMs + 5000,
+          }
+        );
+
+
+        /*
+         * Extract execution time.
+         */
+        const timeMatch =
+          stderr.match(
+            /__TIME__:(\d+(?:\.\d+)?)/
+          );
+
+        const executionTime =
+          timeMatch
+            ? Number(timeMatch[1]) * 1000
+            : 0;
+
+
+        /*
+         * Remove timing information
+         * from stderr.
+         */
+        const cleanStderr =
+          stderr
+            .replace(
+              /__TIME__:\d+(?:\.\d+)?\s*/g,
+              ""
+            )
+            .trim();
+
+
+        /*
+         * Compare output.
+         */
+        const passed =
+          normalize(stdout) ===
+          normalize(tc.expectedOutput);
+
+
+        let verdict:
+          TestResult["verdict"] =
+          passed ? "AC" : "WA";
+
+
+        /*
+         * Time limit exceeded.
+         */
+        if (
+          executionTime >
+          timeLimitMs
+        ) {
+          verdict = "TLE";
+        }
+
+
+        results.push({
+          verdict,
+
+          input: tc.input,
+
+          expectedOutput:
+            tc.expectedOutput,
+
+          actualOutput:
+            stdout,
+
+          stderr:
+            cleanStderr,
+
+          executionTime,
+
+          /*
+           * Memory isn't being measured yet.
+           */
+          memoryUsed: null,
+        });
+
+
+      } catch (error: any) {
+
+        const stderr =
+          error.stderr ||
+          error.message ||
+          "";
+
+
+        /*
+         * Try to extract timing
+         * even when process was terminated.
+         */
+        const timeMatch =
+          stderr.match(
+            /__TIME__:(\d+(?:\.\d+)?)/
+          );
+
+
+        const executionTime =
+          timeMatch
+            ? Number(timeMatch[1]) * 1000
+            : timeLimitMs;
+
+
+        let verdict:
+          TestResult["verdict"] =
+          "RE";
+
+
+        /*
+         * GNU timeout returns 124.
+         */
+        if (
+          error.code === 124
+        ) {
+          verdict = "TLE";
+        }
+
+
+        /*
+         * Docker/container killed
+         * because memory limit was exceeded.
+         */
+        else if (
+          error.code === 137
+        ) {
+          verdict = "MLE";
+        }
+
+
+        /*
+         * Outer Node timeout.
+         */
+        else if (
+          executionTime >=
+          timeLimitMs
+        ) {
+          verdict = "TLE";
+        }
+
+
+        results.push({
+          verdict,
+
+          input: tc.input,
+
+          expectedOutput:
+            tc.expectedOutput,
+
+          actualOutput: "",
+
+          stderr,
+
+          executionTime,
+
+          memoryUsed: null,
+        });
+
+      } finally {
+
+        /*
+         * Delete this test case's
+         * temporary input file.
+         */
+        await fs.rm(
+          inputFileHost,
+          {
+            force: true,
+          }
+        );
       }
-
-      results.push({
-        verdict,
-        input: tc.input,
-        expectedOutput: tc.expectedOutput,
-        actualOutput: "",
-        stderr,
-      });
-    } finally {
-      await fs.rm(inputFileHost, { force: true });
     }
+
+  } finally {
+
+    /*
+     * IMPORTANT:
+     *
+     * Delete the compiled executable.
+     *
+     * This is what removes:
+     *
+     * temp/main-123456789
+     *
+     * after every execution.
+     *
+     * It runs even if the test loop
+     * crashes or throws an error.
+     */
+    await fs.rm(
+      path.join(
+        process.cwd(),
+        executablePath
+      ),
+      {
+        force: true,
+      }
+    );
   }
+
+
+  /*
+   * For multiple test cases,
+   * report maximum execution time.
+   */
+  const executionTime =
+    results.length > 0
+      ? Math.max(
+          ...results.map(
+            (r) =>
+              r.executionTime ?? 0
+          )
+        )
+      : 0;
+
+
+  /*
+   * Memory isn't being measured yet.
+   *
+   * Docker is still enforcing the
+   * memory limit.
+   */
+  const memoryUsed = null;
+
 
   return {
     results,
-    allPassed: results.every((r) => r.verdict === "AC"),
+
+    allPassed:
+      results.length > 0 &&
+      results.every(
+        (r) => r.verdict === "AC"
+      ),
+
+    executionTime,
+
+    memoryUsed,
   };
 }

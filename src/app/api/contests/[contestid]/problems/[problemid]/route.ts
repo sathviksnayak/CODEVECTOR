@@ -13,14 +13,32 @@ export async function GET(
 ) {
   const { contestid, problemid } = await params;
 
-  const problem = await prisma.problem.findUnique({
+  const contestProblem = await prisma.contestProblem.findUnique({
     where: {
-      id: Number(problemid),
+      contestId_problemId: {
+        contestId: Number(contestid),
+        problemId: Number(problemid),
+      },
     },
     include: {
-      testCases: true,
+      problem: {
+        include: {
+          testCases: true,
+        },
+      },
+      contest: true,
     },
   });
 
-  return Response.json(problem);
+  if (!contestProblem) {
+    return Response.json(
+      { error: "Problem not found in this contest" },
+      { status: 404 }
+    );
+  }
+
+  return Response.json({
+    problem: contestProblem.problem,
+    contest: contestProblem.contest,
+  });
 }

@@ -10,21 +10,50 @@ export default function TestCasesTab({
 }: {
   testCases: TestCase[];
 }) {
+  const visibleTestCases = testCases.filter(
+    (tc) => !tc.isHidden
+  );
+
   return (
-    <div>
-      {testCases
-        .filter((tc) => !tc.isHidden)
-        .map((tc) => (
-          <div key={tc.id}>
-            <h3>Example {tc.id}</h3>
+    <div className="space-y-6">
+      {visibleTestCases.map((tc, index) => (
+        <div
+          key={tc.id}
+          className="rounded-lg border border-gray-800 bg-gray-950 p-5"
+        >
+          <h3 className="mb-5 text-lg font-semibold">
+            Example {index + 1}
+          </h3>
 
-            <h4>Input</h4>
-            <pre>{tc.input}</pre>
+          <div className="space-y-4">
+            <div>
+              <h4 className="mb-2 text-sm font-medium text-gray-400">
+                Input
+              </h4>
 
-            <h4>Output</h4>
-            <pre>{tc.output}</pre>
+              <pre className="overflow-x-auto rounded bg-black p-4 font-mono text-sm text-gray-200">
+                {tc.input}
+              </pre>
+            </div>
+
+            <div>
+              <h4 className="mb-2 text-sm font-medium text-gray-400">
+                Output
+              </h4>
+
+              <pre className="overflow-x-auto rounded bg-black p-4 font-mono text-sm text-gray-200">
+                {tc.output}
+              </pre>
+            </div>
           </div>
-        ))}
+        </div>
+      ))}
+
+      {visibleTestCases.length === 0 && (
+        <p className="text-gray-500">
+          No examples available.
+        </p>
+      )}
     </div>
   );
 }

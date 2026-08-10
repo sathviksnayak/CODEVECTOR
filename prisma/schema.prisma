@@ -16,6 +16,7 @@ model User {
   password String
 
   submissions Submission[]
+  contests ContestParticipant[]
 
   createdAt DateTime @default(now())
 }
@@ -45,9 +46,7 @@ model Submission {
   id Int @id @default(autoincrement())
 
   code String
-
   language Language
-
   verdict Verdict?
 
   executionTime Int?
@@ -56,8 +55,11 @@ model Submission {
   userId Int
   problemId Int
 
+  contestId Int?
+
   user User @relation(fields: [userId], references: [id])
   problem Problem @relation(fields: [problemId], references: [id])
+  contest Contest? @relation(fields: [contestId], references: [id])
 
   createdAt DateTime @default(now())
 }
@@ -65,11 +67,12 @@ model Contest {
   id Int @id @default(autoincrement())
 
   title String
-
   startTime DateTime
   endTime DateTime
 
   problems ContestProblem[]
+  participants ContestParticipant[]
+  submissions Submission[]
 
   createdAt DateTime @default(now())
 }
@@ -78,11 +81,26 @@ model ContestProblem {
   contestId Int
   problemId Int
 
+  points Int @default(100)
+
   contest Contest @relation(fields: [contestId], references: [id])
   problem Problem @relation(fields: [problemId], references: [id])
 
   @@id([contestId, problemId])
 }
+
+model ContestParticipant {
+  contestId Int
+  userId    Int
+
+  contest Contest @relation(fields: [contestId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  joinedAt DateTime @default(now())
+
+  @@id([contestId, userId])
+}
+
 
 enum Difficulty {
   EASY

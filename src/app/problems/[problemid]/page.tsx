@@ -8,7 +8,7 @@ export default async function Page({
   const { problemid } = await params;
 
   const problemRes = await fetch(
-    `http://localhost:3000/api/problems/${problemid}`,
+    `/api/problems/${problemid}`,
     {
       cache: "no-store",
     }
@@ -21,7 +21,7 @@ export default async function Page({
   const data = await problemRes.json();
 
   const submissionsRes = await fetch(
-    `http://localhost:3000/api/submissions?problemId=${problemid}`,
+    `/api/submissions?problemId=${problemid}`,
     {
       cache: "no-store",
     }

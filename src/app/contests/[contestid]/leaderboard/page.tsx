@@ -4,7 +4,7 @@ async function getLeaderboard(
   contestId: string
 ) {
   const res = await fetch(
-    `http://localhost:3000/api/contests/${contestId}/leaderboard`,
+    `/api/contests/${contestId}/leaderboard`,
     {
       cache: "no-store",
     }

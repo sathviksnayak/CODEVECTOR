@@ -11,7 +11,7 @@ async function ContestProblemPage({
   const { contestid, problemid } = await params;
 
   const res = await fetch(
-    `http://localhost:3000/api/contests/${contestid}/problems/${problemid}`,
+    `/api/contests/${contestid}/problems/${problemid}`,
     {
       cache: "no-store",
     }

@@ -3,7 +3,7 @@ import JoinButton from "./joinButton";
 
 async function getContests() {
   const res = await fetch(
-    "http://localhost:3000/api/contests",
+    "/api/contests",
     {
       cache: "no-store",
     }

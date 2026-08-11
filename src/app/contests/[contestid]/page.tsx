@@ -22,7 +22,7 @@ export default async function ContestPage({
   const { contestid } = await params;
 
   const res = await fetch(
-    `http://localhost:3000/api/contests/${contestid}`,
+    `/api/contests/${contestid}`,
     {
       cache: "no-store",
     }

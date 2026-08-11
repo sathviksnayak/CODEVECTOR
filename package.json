@@ -2,12 +2,12 @@
   "name": "codevector",
   "version": "0.1.0",
   "private": true,
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint"
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "postinstall": "prisma generate",
+    "start": "next start"
+  },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@prisma/adapter-pg": "^7.9.1",

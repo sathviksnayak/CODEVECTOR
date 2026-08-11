@@ -27,19 +27,17 @@ model Problem {
 
   title       String
   statement   String
-
   difficulty  Difficulty
-
   example     String
   constraints String
 
-  timeLimit   Int @default(1000) // ms
-  memoryLimit Int @default(256)  // MB
+  tags String[] @default([])
+
+  timeLimit   Int @default(1000)
+  memoryLimit Int @default(256)
 
   submissions Submission[]
-
   contestProblems ContestProblem[]
-
   testCases TestCase[]
 
   createdAt DateTime @default(now())

@@ -362,7 +362,7 @@ export default function CodePanel({
             C++
           </option>
 
-          <option value="JAVA">
+          {/* <option value="JAVA">
             Java
           </option>
 
@@ -372,7 +372,7 @@ export default function CodePanel({
 
           <option value="JAVASCRIPT">
             JavaScript
-          </option>
+          </option> */}
         </select>
 
         <div className="flex gap-2">

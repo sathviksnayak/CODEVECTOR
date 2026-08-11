@@ -50,9 +50,11 @@ export default async function Page() {
     where: {
       id: payload.id,
     },
+
     select: {
       username: true,
       email: true,
+      role: true,
 
       submissions: {
         take: 10,
@@ -74,9 +76,6 @@ export default async function Page() {
 
   /*
    * Get accurate statistics.
-   *
-   * We cannot calculate these from user.submissions
-   * because that list only contains the latest 10.
    */
   const [
     totalSubmissions,
@@ -121,22 +120,39 @@ export default async function Page() {
         )
       : 0;
 
-  const recentSubmissions =
-    user.submissions;
+  const recentSubmissions = user.submissions;
+
+  const isAdmin =
+    user.role === "ADMIN" ||
+    user.role === "SUPERADMIN";
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <div className="mx-auto max-w-5xl">
 
         {/* Profile Header */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold tracking-tight">
-            {user.username}
-          </h1>
+        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
-          <p className="mt-2 text-gray-500">
-            {user.email}
-          </p>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">
+              {user.username}
+            </h1>
+
+            <p className="mt-2 text-gray-500">
+              {user.email}
+            </p>
+          </div>
+
+          {/* Admin Panel */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="w-fit rounded-lg border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-400 transition hover:bg-purple-500/20"
+            >
+              Admin Panel
+            </Link>
+          )}
+
         </div>
 
         {/* Statistics */}

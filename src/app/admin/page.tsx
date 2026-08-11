@@ -215,7 +215,7 @@ export default async function AdminPage() {
               </div>
 
               <span className="w-fit rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
-                ADMIN
+                {user.role}
               </span>
             </div>
           </div>

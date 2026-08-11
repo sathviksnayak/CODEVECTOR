@@ -10,8 +10,9 @@ type Problem = {
 };
 
 type ContestProblem = {
-  id: number;
+  contestId: number;
   problemId: number;
+  points: number;
 };
 
 type Contest = {
@@ -53,11 +54,13 @@ export default function EditContestForm({
     formatDateTime(contest.endTime)
   );
 
-  // IMPORTANT:
-  // contest.problems contains ContestProblem records.
-  // We need their problemId, not their own id.
+  /*
+   * Contest.problems contains ContestProblem records.
+   *
+   * We only need the actual problem IDs here.
+   */
   const [selectedProblems, setSelectedProblems] = useState<number[]>(
-    contest.problems.map((cp) => cp.problemId)
+    contest.problems.map((contestProblem) => contestProblem.problemId)
   );
 
   const [loading, setLoading] = useState(false);
@@ -83,7 +86,9 @@ export default function EditContestForm({
     setSuccess("");
 
     if (selectedProblems.length === 0) {
-      setError("A contest must contain at least one problem.");
+      setError(
+        "A contest must contain at least one problem."
+      );
       return;
     }
 
@@ -96,7 +101,9 @@ export default function EditContestForm({
     }
 
     if (start <= new Date()) {
-      setError("The contest must still be upcoming.");
+      setError(
+        "The contest must still be upcoming."
+      );
       return;
     }
 
@@ -122,11 +129,16 @@ export default function EditContestForm({
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to update contest");
+        setError(
+          data.error ||
+            "Failed to update contest"
+        );
         return;
       }
 
-      setSuccess("Contest updated successfully.");
+      setSuccess(
+        "Contest updated successfully."
+      );
 
       router.refresh();
 
@@ -141,8 +153,10 @@ export default function EditContestForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6"
+    >
       {/* Title */}
       <div>
         <label className="mb-2 block text-sm font-medium">
@@ -152,7 +166,9 @@ export default function EditContestForm({
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) =>
+            setTitle(e.target.value)
+          }
           className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 outline-none focus:border-blue-500"
           required
         />
@@ -168,7 +184,9 @@ export default function EditContestForm({
           <input
             type="datetime-local"
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={(e) =>
+              setStartTime(e.target.value)
+            }
             className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 outline-none focus:border-blue-500"
             required
           />
@@ -182,7 +200,9 @@ export default function EditContestForm({
           <input
             type="datetime-local"
             value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
+            onChange={(e) =>
+              setEndTime(e.target.value)
+            }
             className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 outline-none focus:border-blue-500"
             required
           />
@@ -214,8 +234,12 @@ export default function EditContestForm({
               >
                 <input
                   type="checkbox"
-                  checked={selectedProblems.includes(problem.id)}
-                  onChange={() => toggleProblem(problem.id)}
+                  checked={selectedProblems.includes(
+                    problem.id
+                  )}
+                  onChange={() =>
+                    toggleProblem(problem.id)
+                  }
                 />
 
                 <div>
@@ -234,7 +258,10 @@ export default function EditContestForm({
 
         <p className="mt-2 text-sm text-gray-500">
           {selectedProblems.length} problem
-          {selectedProblems.length !== 1 ? "s" : ""} selected
+          {selectedProblems.length !== 1
+            ? "s"
+            : ""}{" "}
+          selected
         </p>
       </div>
 
@@ -259,18 +286,21 @@ export default function EditContestForm({
           disabled={loading}
           className="rounded-lg bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "Saving Changes..." : "Save Changes"}
+          {loading
+            ? "Saving Changes..."
+            : "Save Changes"}
         </button>
 
         <button
           type="button"
-          onClick={() => router.push("/admin/contests")}
+          onClick={() =>
+            router.push("/admin/contests")
+          }
           className="rounded-lg border border-gray-700 px-6 py-3 font-medium hover:bg-gray-900"
         >
           Cancel
         </button>
       </div>
-
     </form>
   );
 }

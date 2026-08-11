@@ -1,168 +1,209 @@
-"use client";
+import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/getUser";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
-import { useState,useEffect } from "react";
+export default async function AdminPage() {
+  const user = await getUser();
 
-export default function AdminPage() {
-  const [title, setTitle] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [message, setMessage] = useState("");
-  const [problems, setProblems] = useState<any[]>([]);
-const [selectedProblems, setSelectedProblems] = useState<number[]>([]);
-
-useEffect(() => {
-  async function loadProblems() {
-    const res = await fetch("/api/problems");
-    const data = await res.json();
-    setProblems(data);
+  if (!user) {
+    redirect("/login");
   }
 
-  loadProblems();
-}, []);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    setMessage("");
-
-    const response = await fetch("/api/admin/contests", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-body: JSON.stringify({
-  title,
-  startTime,
-  endTime,
-  problemIds: selectedProblems,
-}),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      setMessage("Contest created successfully");
-      setTitle("");
-      setStartTime("");
-      setEndTime("");
-    } else {
-      setMessage(data.error || "Failed to create contest");
-    }
+  if (user.role !== "ADMIN") {
+    redirect("/");
   }
+
+  const [
+    problemCount,
+    contestCount,
+    userCount,
+    submissionCount,
+  ] = await Promise.all([
+    prisma.problem.count(),
+    prisma.contest.count(),
+    prisma.user.count(),
+    prisma.submission.count(),
+  ]);
 
   return (
-    
     <main className="min-h-screen bg-black px-6 py-10 text-white">
+      <div className="mx-auto max-w-6xl">
 
-      <div className="mx-auto max-w-2xl">
+        {/* Header */}
+        <div className="mb-10">
+          <p className="text-sm font-medium text-blue-400">
+            Admin Panel
+          </p>
 
-        <h1 className="mb-8 text-3xl font-bold">
-          Admin Dashboard
-        </h1>
+          <h1 className="mt-1 text-4xl font-bold">
+            Dashboard
+          </h1>
 
-        <div className="rounded-lg border border-gray-700 bg-gray-950 p-6">
+          <p className="mt-2 text-gray-500">
+            Welcome back, {user.username}.
+          </p>
+        </div>
 
-          <h2 className="mb-6 text-xl font-semibold">
-            Create Contest
+        {/* Stats */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <p className="text-sm text-gray-500">
+              Problems
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {problemCount}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <p className="text-sm text-gray-500">
+              Contests
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {contestCount}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <p className="text-sm text-gray-500">
+              Users
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {userCount}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <p className="text-sm text-gray-500">
+              Submissions
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {submissionCount}
+            </p>
+          </div>
+        </div>
+
+        {/* Management */}
+        <section className="mt-10">
+          <h2 className="mb-4 text-xl font-semibold">
+            Management
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-2">
 
-            <div>
-              <label className="mb-2 block text-sm">
-                Contest Title
-              </label>
+            {/* Problems */}
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Problems
+                  </h3>
 
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Weekly Contest #2"
-                className="w-full rounded border border-gray-700 bg-gray-900 p-3 text-white"
-                required
-              />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Create and manage coding problems.
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
+                  {problemCount}
+                </span>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <Link
+                  href="/admin/problems"
+                  className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
+                >
+                  Manage Problems
+                </Link>
+
+                <Link
+                  href="/admin/problems/create"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-700"
+                >
+                  Create Problem
+                </Link>
+              </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm">
-                Start Time
-              </label>
+            {/* Contests */}
+            <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Contests
+                  </h3>
 
-              <input
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded border border-gray-700 bg-gray-900 p-3"
-                required
-              />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Create and manage programming contests.
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs text-purple-400">
+                  {contestCount}
+                </span>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <Link
+                  href="/admin/contests"
+                  className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
+                >
+                  Manage Contests
+                </Link>
+
+                <Link
+                  href="/admin/contests/create"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-700"
+                >
+                  Create Contest
+                </Link>
+              </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm">
-                End Time
-              </label>
+          </div>
+        </section>
 
-              <input
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded border border-gray-700 bg-gray-900 p-3"
-                required
-              />
+        {/* Account */}
+        <section className="mt-10">
+          <h2 className="mb-4 text-xl font-semibold">
+            Current User
+          </h2>
+
+          <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold">
+                  {user.username}
+                </p>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  {user.email}
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
+                ADMIN
+              </span>
             </div>
+          </div>
+        </section>
 
-            <div>
-  <label className="mb-3 block text-sm font-semibold">
-    Select Problems
-  </label>
-
-  <div className="space-y-2 rounded border border-gray-700 p-4">
-    {problems.map((problem) => (
-      <label
-        key={problem.id}
-        className="flex items-center gap-3 rounded p-2 hover:bg-gray-900"
-      >
-        <input
-          type="checkbox"
-          checked={selectedProblems.includes(problem.id)}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setSelectedProblems((prev) => [
-                ...prev,
-                problem.id,
-              ]);
-            } else {
-              setSelectedProblems((prev) =>
-                prev.filter((id) => id !== problem.id)
-              );
-            }
-          }}
-        />
-
-        <span>
-          {problem.title} ({problem.difficulty})
-        </span>
-      </label>
-    ))}
-  </div>
-</div>
-
-            <button
-              type="submit"
-              className="w-full rounded bg-blue-600 p-3 font-semibold hover:bg-blue-700"
-            >
-              Create Contest
-            </button>
-
-          </form>
-
-          {message && (
-            <p className="mt-4 text-gray-300">
-              {message}
-            </p>
-          )}
-
+        {/* Back to platform */}
+        <div className="mt-10 border-t border-gray-800 pt-6">
+          <Link
+            href="/"
+            className="text-sm text-gray-500 hover:text-white"
+          >
+            ← Back to CodeVector
+          </Link>
         </div>
+
       </div>
     </main>
   );

@@ -1,19 +1,13 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import JoinButton from "./joinButton";
 
 async function getContests() {
-  const res = await fetch(
-    "/api/contests",
-    {
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch contests");
-  }
-
-  return res.json();
+  return prisma.contest.findMany({
+    orderBy: {
+      startTime: "desc",
+    },
+  });
 }
 
 function getStatus(start: Date, end: Date) {
@@ -68,7 +62,7 @@ export default async function ContestsPage() {
               No contests available.
             </div>
           ) : (
-            contests.map((contest: any) => {
+            contests.map((contest) => {
               const start = new Date(contest.startTime);
               const end = new Date(contest.endTime);
 

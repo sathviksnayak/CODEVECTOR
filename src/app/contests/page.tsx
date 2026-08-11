@@ -20,7 +20,7 @@ function getStatus(start: Date, end: Date) {
   const now = new Date();
 
   if (now < start) return "Upcoming";
-  if (now > end) return "Ended";
+  if (now >= end) return "Ended";
 
   return "Live";
 }
@@ -28,16 +28,16 @@ function getStatus(start: Date, end: Date) {
 function statusStyle(status: string) {
   switch (status) {
     case "Live":
-      return "bg-green-500/10 text-green-400 border-green-500/20";
+      return "border-green-500/20 bg-green-500/10 text-green-400";
 
     case "Upcoming":
-      return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+      return "border-yellow-500/20 bg-yellow-500/10 text-yellow-400";
 
     case "Ended":
-      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+      return "border-gray-700 bg-gray-800/50 text-gray-400";
 
     default:
-      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+      return "border-gray-700 bg-gray-800/50 text-gray-400";
   }
 }
 
@@ -61,25 +61,28 @@ export default async function ContestsPage() {
         </div>
 
         {/* Contest list */}
-        <div className="space-y-4">
+        <div className="space-y-5">
+
           {contests.length === 0 ? (
             <div className="rounded-xl border border-gray-800 bg-gray-950 px-6 py-12 text-center text-gray-500">
               No contests available.
             </div>
           ) : (
             contests.map((contest: any) => {
-              const status = getStatus(
-                new Date(contest.startTime),
-                new Date(contest.endTime)
-              );
+              const start = new Date(contest.startTime);
+              const end = new Date(contest.endTime);
+
+              const status = getStatus(start, end);
 
               return (
                 <div
                   key={contest.id}
-                  className="rounded-xl border border-gray-800 bg-gray-950 p-6 transition hover:border-gray-700"
+                  className="rounded-xl border border-gray-800 bg-gray-950 p-6 transition-colors hover:border-gray-700"
                 >
-                  {/* Contest header */}
+
+                  {/* Header */}
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
                     <div>
                       <h2 className="text-xl font-semibold">
                         {contest.title}
@@ -100,16 +103,15 @@ export default async function ContestsPage() {
                   </div>
 
                   {/* Time information */}
-                  <div className="mt-6 grid gap-4 border-t border-gray-800 pt-5 sm:grid-cols-2">
+                  <div className="mt-6 grid gap-5 border-t border-gray-800 pt-5 sm:grid-cols-2">
+
                     <div>
                       <p className="text-xs uppercase tracking-wide text-gray-500">
                         Starts
                       </p>
 
                       <p className="mt-1 text-sm text-gray-300">
-                        {new Date(
-                          contest.startTime
-                        ).toLocaleString()}
+                        {start.toLocaleString()}
                       </p>
                     </div>
 
@@ -119,34 +121,38 @@ export default async function ContestsPage() {
                       </p>
 
                       <p className="mt-1 text-sm text-gray-300">
-                        {new Date(
-                          contest.endTime
-                        ).toLocaleString()}
+                        {end.toLocaleString()}
                       </p>
                     </div>
+
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    {status === "Live" && (
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+
+                    {/* Join */}
+                    {status !== "Ended" && (
                       <JoinButton
                         contestId={contest.id}
                       />
                     )}
 
+                    {/* Leaderboard */}
                     {status !== "Upcoming" && (
                       <Link
                         href={`/contests/${contest.id}/leaderboard`}
-                        className="rounded bg-gray-800 px-4 py-2 text-sm font-medium hover:bg-gray-700"
+                        className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 px-4 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-700"
                       >
                         Leaderboard
                       </Link>
                     )}
+
                   </div>
                 </div>
               );
             })
           )}
+
         </div>
 
         {/* Contest count */}
@@ -156,6 +162,7 @@ export default async function ContestsPage() {
             {contests.length !== 1 ? "s" : ""} available
           </p>
         )}
+
       </div>
     </main>
   );

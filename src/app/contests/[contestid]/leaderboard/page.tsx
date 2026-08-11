@@ -1,6 +1,8 @@
 import LeaderboardClient from "./LeaderboardClient";
 
-async function getLeaderboard(contestId: string) {
+async function getLeaderboard(
+  contestId: string
+) {
   const res = await fetch(
     `http://localhost:3000/api/contests/${contestId}/leaderboard`,
     {
@@ -9,7 +11,9 @@ async function getLeaderboard(contestId: string) {
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch leaderboard");
+    throw new Error(
+      "Failed to fetch leaderboard"
+    );
   }
 
   return res.json();
@@ -24,7 +28,8 @@ export default async function LeaderboardPage({
 }) {
   const { contestid } = await params;
 
-  const data = await getLeaderboard(contestid);
+  const data =
+    await getLeaderboard(contestid);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -40,9 +45,15 @@ export default async function LeaderboardPage({
         <div className="mt-10">
           <LeaderboardClient
             contestId={contestid}
-            initialLeaderboard={data.leaderboard}
-            startTime={data.contest.startTime}
-            endTime={data.contest.endTime}
+            initialLeaderboard={
+              data.leaderboard
+            }
+            startTime={
+              data.contest.startTime
+            }
+            endTime={
+              data.contest.endTime
+            }
           />
         </div>
       </div>

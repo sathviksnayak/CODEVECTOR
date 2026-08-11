@@ -10,7 +10,7 @@ export default async function AdminPage() {
     redirect("/login");
   }
 
-  if (user.role !== "ADMIN") {
+  if ( user.role!=="SUPERADMIN" && user.role !== "ADMIN" ) {
     redirect("/");
   }
 
@@ -88,87 +88,114 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        {/* Management */}
-        <section className="mt-10">
-          <h2 className="mb-4 text-xl font-semibold">
-            Management
-          </h2>
+{/* Management */}
+<section className="mt-10">
+  <h2 className="mb-4 text-xl font-semibold">
+    Management
+  </h2>
 
-          <div className="grid gap-4 md:grid-cols-2">
+  <div className="grid gap-4 md:grid-cols-2">
 
-            {/* Problems */}
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Problems
-                  </h3>
+    {/* Problems */}
+    <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">
+            Problems
+          </h3>
 
-                  <p className="mt-1 text-sm text-gray-500">
-                    Create and manage coding problems.
-                  </p>
-                </div>
+          <p className="mt-1 text-sm text-gray-500">
+            Create and manage coding problems.
+          </p>
+        </div>
 
-                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
-                  {problemCount}
-                </span>
-              </div>
+        <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
+          {problemCount}
+        </span>
+      </div>
 
-              <div className="mt-6 flex gap-3">
-                <Link
-                  href="/admin/problems"
-                  className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
-                >
-                  Manage Problems
-                </Link>
+      <div className="mt-6 flex gap-3">
+        <Link
+          href="/admin/problems"
+          className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
+        >
+          Manage Problems
+        </Link>
 
-                <Link
-                  href="/admin/problems/create"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-700"
-                >
-                  Create Problem
-                </Link>
-              </div>
-            </div>
+        <Link
+          href="/admin/problems/create"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-700"
+        >
+          Create Problem
+        </Link>
+      </div>
+    </div>
 
-            {/* Contests */}
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Contests
-                  </h3>
+    {/* Contests */}
+    <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">
+            Contests
+          </h3>
 
-                  <p className="mt-1 text-sm text-gray-500">
-                    Create and manage programming contests.
-                  </p>
-                </div>
+          <p className="mt-1 text-sm text-gray-500">
+            Create and manage programming contests.
+          </p>
+        </div>
 
-                <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs text-purple-400">
-                  {contestCount}
-                </span>
-              </div>
+        <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs text-purple-400">
+          {contestCount}
+        </span>
+      </div>
 
-              <div className="mt-6 flex gap-3">
-                <Link
-                  href="/admin/contests"
-                  className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
-                >
-                  Manage Contests
-                </Link>
+      <div className="mt-6 flex gap-3">
+        <Link
+          href="/admin/contests"
+          className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
+        >
+          Manage Contests
+        </Link>
 
-                <Link
-                  href="/admin/contests/create"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-700"
-                >
-                  Create Contest
-                </Link>
-              </div>
-            </div>
+        <Link
+          href="/admin/contests/create"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-700"
+        >
+          Create Contest
+        </Link>
+      </div>
+    </div>
 
-          </div>
-        </section>
+    {/* Users */}
+    <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">
+            Users
+          </h3>
 
+          <p className="mt-1 text-sm text-gray-500">
+            View users and manage their roles.
+          </p>
+        </div>
+
+        <span className="rounded-full bg-green-500/10 px-3 py-1 text-xs text-green-400">
+          {userCount}
+        </span>
+      </div>
+
+      <div className="mt-6">
+        <Link
+          href="/admin/users"
+          className="inline-block rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-900"
+        >
+          Manage Users
+        </Link>
+      </div>
+    </div>
+
+  </div>
+</section>
         {/* Account */}
         <section className="mt-10">
           <h2 className="mb-4 text-xl font-semibold">

@@ -4,7 +4,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ contestid: string }> }
+  {
+    params,
+  }: {
+    params: Promise<{
+      contestid: string;
+    }>;
+  }
 ) {
   const user = await getUser();
   const { contestid } = await params;
@@ -16,9 +22,18 @@ export async function POST(
     );
   }
 
+  const contestId = Number(contestid);
+
+  if (!Number.isInteger(contestId)) {
+    return NextResponse.json(
+      { error: "Invalid contest ID" },
+      { status: 400 }
+    );
+  }
+
   const contest = await prisma.contest.findUnique({
     where: {
-      id: Number(contestid),
+      id: contestId,
     },
   });
 
@@ -31,13 +46,26 @@ export async function POST(
 
   const now = new Date();
 
-  if (now > contest.endTime) {
+  /*
+   * Users can join:
+   *
+   * - before the contest starts
+   * - while the contest is live
+   *
+   * They cannot join once it has ended.
+   */
+  if (now >= contest.endTime) {
     return NextResponse.json(
-      { error: "Contest has already ended" },
+      {
+        error: "Contest has already ended",
+      },
       { status: 400 }
     );
   }
 
+  /*
+   * Check whether the user has already joined.
+   */
   const existingParticipant =
     await prisma.contestParticipant.findUnique({
       where: {
@@ -50,11 +78,16 @@ export async function POST(
 
   if (existingParticipant) {
     return NextResponse.json(
-      { message :"joined" },
+      {
+        message: "joined",
+      },
       { status: 200 }
     );
   }
 
+  /*
+   * Register the user as a participant.
+   */
   await prisma.contestParticipant.create({
     data: {
       contestId: contest.id,
@@ -63,7 +96,9 @@ export async function POST(
   });
 
   return NextResponse.json(
-    { message: "Joined contest successfully" },
+    {
+      message: "Joined contest successfully",
+    },
     { status: 201 }
   );
 }

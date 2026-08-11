@@ -9,7 +9,7 @@ export default async function Page() {
     redirect("/login");
   }
 
-  if (user.role !== "ADMIN") {
+  if ( user.role!=="SUPERADMIN" && user.role !== "ADMIN" ) {
     redirect("/");
   }
 

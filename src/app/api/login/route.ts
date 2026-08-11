@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+
 function validate(identifier: string, password: string) {
   const errors: {
     identifier?: string;
@@ -50,6 +51,19 @@ export async function POST(request: Request) {
     );
   }
 
+  /*
+   * Banned users cannot log in.
+   */
+  if (user.banned) {
+    return NextResponse.json(
+      {
+        error:
+          "Your account has been banned. You cannot log in.",
+      },
+      { status: 403 }
+    );
+  }
+
   const passwordMatches = await compare(
     password,
     user.password
@@ -66,8 +80,8 @@ export async function POST(request: Request) {
     {
       id: user.id,
       username: user.username,
-      email:user.email,
-      role:user.role
+      email: user.email,
+      role: user.role,
     },
     process.env.JWT_SECRET!,
     {
@@ -75,10 +89,13 @@ export async function POST(request: Request) {
     }
   );
 
-const response = NextResponse.json(
-  { message: "Login successful",userid:user.id},
-  { status: 200 }
-);
+  const response = NextResponse.json(
+    {
+      message: "Login successful",
+      userid: user.id,
+    },
+    { status: 200 }
+  );
 
   response.cookies.set("token", token, {
     httpOnly: true,

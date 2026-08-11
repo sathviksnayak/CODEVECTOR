@@ -6,7 +6,6 @@ type LeaderboardEntry = {
   userId: number;
   username: string;
   solved: number;
-  score: number;
   penalty: number;
 };
 
@@ -24,32 +23,24 @@ export default function LeaderboardClient({
   endTime,
 }: Props) {
   const [leaderboard, setLeaderboard] =
-    useState<LeaderboardEntry[]>(initialLeaderboard);
+    useState<LeaderboardEntry[]>(
+      initialLeaderboard
+    );
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     let startTimer: NodeJS.Timeout | null = null;
     let endTimer: NodeJS.Timeout | null = null;
 
-    const start = new Date(startTime).getTime();
-    const end = new Date(endTime).getTime();
+    const start = new Date(
+      startTime
+    ).getTime();
+
+    const end = new Date(
+      endTime
+    ).getTime();
 
     async function fetchLeaderboard() {
-      // Contest hasn't started
-      if (Date.now() < start) {
-        return;
-      }
-
-      // Contest has ended
-      if (Date.now() >= end) {
-        if (interval) {
-          clearInterval(interval);
-          interval = null;
-        }
-
-        return;
-      }
-
       try {
         const res = await fetch(
           `/api/contests/${contestId}/leaderboard`,
@@ -59,26 +50,46 @@ export default function LeaderboardClient({
         );
 
         if (!res.ok) {
-          console.error("Failed to fetch leaderboard");
+          console.error(
+            "Failed to fetch leaderboard"
+          );
           return;
         }
 
         const data = await res.json();
 
-        setLeaderboard(data.leaderboard);
+        setLeaderboard(
+          data.leaderboard
+        );
       } catch (error) {
-        console.error("Leaderboard fetch error:", error);
+        console.error(
+          "Leaderboard fetch error:",
+          error
+        );
       }
     }
 
     const now = Date.now();
 
-    // Contest is currently running
+    /*
+     * Contest is currently live.
+     */
     if (now >= start && now < end) {
-      interval = setInterval(fetchLeaderboard, 10000);
+      /*
+       * Fetch immediately instead of waiting
+       * 10 seconds for the first update.
+       */
+      fetchLeaderboard();
+
+      interval = setInterval(
+        fetchLeaderboard,
+        10000
+      );
     }
 
-    // Contest hasn't started yet
+    /*
+     * Contest hasn't started.
+     */
     else if (now < start) {
       startTimer = setTimeout(() => {
         fetchLeaderboard();
@@ -90,33 +101,60 @@ export default function LeaderboardClient({
       }, start - now);
     }
 
-    // Stop polling exactly when contest ends
+    /*
+     * Fetch one final leaderboard exactly
+     * when the contest ends.
+     */
     if (now < end) {
       endTimer = setTimeout(() => {
         if (interval) {
           clearInterval(interval);
           interval = null;
         }
+
+        fetchLeaderboard();
       }, end - now);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
-      if (startTimer) clearTimeout(startTimer);
-      if (endTimer) clearTimeout(endTimer);
+      if (interval) {
+        clearInterval(interval);
+      }
+
+      if (startTimer) {
+        clearTimeout(startTimer);
+      }
+
+      if (endTimer) {
+        clearTimeout(endTimer);
+      }
     };
-  }, [contestId, startTime, endTime]);
+  }, [
+    contestId,
+    startTime,
+    endTime,
+  ]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-700">
+    <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950">
       <table className="w-full">
-        <thead className="bg-gray-900">
+        <thead className="bg-gray-900/70">
           <tr>
-            <th className="px-6 py-4 text-left">Rank</th>
-            <th className="px-6 py-4 text-left">User</th>
-            <th className="px-6 py-4 text-center">Solved</th>
-            <th className="px-6 py-4 text-center">Score</th>
-            <th className="px-6 py-4 text-center">Penalty</th>
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">
+              Rank
+            </th>
+
+            <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">
+              User
+            </th>
+
+            <th className="px-6 py-4 text-center text-sm font-medium text-gray-400">
+              Solved
+            </th>
+
+            <th className="px-6 py-4 text-center text-sm font-medium text-gray-400">
+              Penalty
+            </th>
           </tr>
         </thead>
 
@@ -124,39 +162,37 @@ export default function LeaderboardClient({
           {leaderboard.length === 0 ? (
             <tr>
               <td
-                colSpan={5}
+                colSpan={4}
                 className="px-6 py-12 text-center text-gray-500"
               >
-                No participants yet.
+                No submissions yet.
               </td>
             </tr>
           ) : (
-            leaderboard.map((entry, index) => (
-              <tr
-                key={entry.userId}
-                className="border-t border-gray-800 hover:bg-gray-900"
-              >
-                <td className="px-6 py-4 font-semibold">
-                  #{index + 1}
-                </td>
+            leaderboard.map(
+              (entry, index) => (
+                <tr
+                  key={entry.userId}
+                  className="border-t border-gray-800 transition hover:bg-gray-900/60"
+                >
+                  <td className="px-6 py-4 font-semibold">
+                    #{index + 1}
+                  </td>
 
-                <td className="px-6 py-4">
-                  {entry.username}
-                </td>
+                  <td className="px-6 py-4">
+                    {entry.username}
+                  </td>
 
-                <td className="px-6 py-4 text-center">
-                  {entry.solved}
-                </td>
+                  <td className="px-6 py-4 text-center font-medium">
+                    {entry.solved}
+                  </td>
 
-                <td className="px-6 py-4 text-center font-semibold">
-                  {entry.score}
-                </td>
-
-                <td className="px-6 py-4 text-center text-gray-400">
-                  {entry.penalty}
-                </td>
-              </tr>
-            ))
+                  <td className="px-6 py-4 text-center text-gray-400">
+                    {entry.penalty}
+                  </td>
+                </tr>
+              )
+            )
           )}
         </tbody>
       </table>

@@ -14,7 +14,7 @@ export default async function EditContestPage({
     redirect("/login");
   }
 
-  if (user.role !== "ADMIN") {
+  if ( user.role!=="SUPERADMIN" && user.role !== "ADMIN" ) {
     redirect("/");
   }
 

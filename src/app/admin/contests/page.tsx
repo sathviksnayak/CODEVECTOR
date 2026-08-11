@@ -35,10 +35,9 @@ export default async function AdminContestsPage() {
     redirect("/login");
   }
 
-  if (user.role !== "ADMIN") {
+  if ( user.role!=="SUPERADMIN" && user.role !== "ADMIN" ) {
     redirect("/");
   }
-
   const contests = await prisma.contest.findMany({
     orderBy: {
       startTime: "desc",

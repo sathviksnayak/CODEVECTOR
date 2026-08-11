@@ -3,12 +3,9 @@ import LeaderboardClient from "./LeaderboardClient";
 async function getLeaderboard(
   contestId: string
 ) {
-  const res = await fetch(
-    `/api/contests/${contestId}/leaderboard`,
-    {
-      cache: "no-store",
-    }
-  );
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/contests/${contestId}/leaderboard`, {
+  cache: "no-store",
+});
 
   if (!res.ok) {
     throw new Error(

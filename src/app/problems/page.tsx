@@ -2,11 +2,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 async function getProblems() {
-  return prisma.problem.findMany({
+  const data= prisma.problem.findMany({
     orderBy: {
       id: "asc",
     },
   });
+  return data
 }
 
 function difficultyStyle(difficulty: string) {
@@ -27,6 +28,7 @@ function difficultyStyle(difficulty: string) {
 
 export default async function ProblemsPage() {
   const problems = await getProblems();
+  console.log(problems);
 
   return (
     <main className="min-h-screen bg-black text-white">

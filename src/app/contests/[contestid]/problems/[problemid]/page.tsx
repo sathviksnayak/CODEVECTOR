@@ -10,12 +10,14 @@ async function ContestProblemPage({
 }) {
   const { contestid, problemid } = await params;
 
-  const res = await fetch(
+ const url = new URL(
     `/api/contests/${contestid}/problems/${problemid}`,
-    {
-      cache: "no-store",
-    }
+    process.env.NEXT_PUBLIC_APP_URL
   );
+
+  const res = await fetch(url, {
+    cache: "no-store",
+  });
 
   if (!res.ok) {
     return <div>Problem not found</div>;

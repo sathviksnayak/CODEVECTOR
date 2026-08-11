@@ -1,4 +1,5 @@
 import ProblemPageContent from "./ProblemPageContent";
+import { notFound } from "next/navigation";
 
 export default async function Page({
   params,
@@ -7,36 +8,46 @@ export default async function Page({
 }) {
   const { problemid } = await params;
 
-  const problemRes = await fetch(
-    `/api/problems/${problemid}`,
-    {
-      cache: "no-store",
-    }
-  );
+  const problemId = Number(problemid);
 
-  if (!problemRes.ok) {
-    throw new Error("Failed to fetch problem");
+  if (!Number.isInteger(problemId)) {
+    notFound();
   }
 
-  const data = await problemRes.json();
-
-  const submissionsRes = await fetch(
-    `/api/submissions?problemId=${problemid}`,
-    {
-      cache: "no-store",
-    }
+  const problemUrl = new URL(
+    `/api/problems/${problemId}`,
+    process.env.NEXT_PUBLIC_APP_URL
   );
+
+  const problemRes = await fetch(problemUrl, {
+    cache: "no-store",
+  });
+
+  if (!problemRes.ok) {
+    notFound();
+  }
+
+  const problem = await problemRes.json();
+
+  const submissionsUrl = new URL(
+    `/api/submissions?problemId=${problemId}`,
+    process.env.NEXT_PUBLIC_APP_URL
+  );
+
+  const submissionsRes = await fetch(submissionsUrl, {
+    cache: "no-store",
+  });
 
   if (!submissionsRes.ok) {
     throw new Error("Failed to fetch submissions");
   }
 
-  const submissionsResponse = await submissionsRes.json();
+  const submissions = await submissionsRes.json();
 
   return (
     <ProblemPageContent
-      problem={data}
-      submissions={submissionsResponse}
+      problem={problem}
+      submissions={submissions}
     />
   );
 }

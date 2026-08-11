@@ -1,13 +1,21 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import JoinButton from "./joinButton";
 
 async function getContests() {
-  return prisma.contest.findMany({
-    orderBy: {
-      startTime: "desc",
-    },
+  const url = new URL(
+    "/api/contests",
+    process.env.NEXT_PUBLIC_APP_URL
+  );
+
+  const res = await fetch(url, {
+    cache: "no-store",
   });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch contests");
+  }
+
+  return res.json();
 }
 
 function getStatus(start: Date, end: Date) {
@@ -38,6 +46,8 @@ function statusStyle(status: string) {
 export default async function ContestsPage() {
   const contests = await getContests();
 
+  console.log(contests);
+
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="mx-auto max-w-5xl px-6 py-12">
@@ -62,7 +72,7 @@ export default async function ContestsPage() {
               No contests available.
             </div>
           ) : (
-            contests.map((contest) => {
+            contests.map((contest: any) => {
               const start = new Date(contest.startTime);
               const end = new Date(contest.endTime);
 
@@ -94,6 +104,7 @@ export default async function ContestsPage() {
                     >
                       {status}
                     </span>
+
                   </div>
 
                   {/* Time information */}
@@ -125,23 +136,22 @@ export default async function ContestsPage() {
                   <div className="mt-6 flex flex-wrap items-center gap-3">
 
                     {/* Join */}
-                    {status !== "Ended" && (
+                    {status === "Live" && (
                       <JoinButton
                         contestId={contest.id}
                       />
                     )}
 
                     {/* Leaderboard */}
-                    {status !== "Upcoming" && (
-                      <Link
-                        href={`/contests/${contest.id}/leaderboard`}
-                        className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 px-4 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-700"
-                      >
-                        Leaderboard
-                      </Link>
-                    )}
+                    <Link
+                      href={`/contests/${contest.id}/leaderboard`}
+                      className="inline-flex h-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 px-4 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-700"
+                    >
+                      Leaderboard
+                    </Link>
 
                   </div>
+
                 </div>
               );
             })

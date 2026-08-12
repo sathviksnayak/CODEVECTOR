@@ -1,4 +1,6 @@
 import ContestProblemPageContent from "./ContestProblemPageContent";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
 
 async function ContestProblemPage({
   params,
@@ -10,26 +12,47 @@ async function ContestProblemPage({
 }) {
   const { contestid, problemid } = await params;
 
- const url = new URL(
-    `/api/contests/${contestid}/problems/${problemid}`,
-    process.env.NEXT_PUBLIC_APP_URL
-  );
+  const contestId = Number(contestid);
+  const problemId = Number(problemid);
 
-  const res = await fetch(url, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    return <div>Problem not found</div>;
+  if (
+    !Number.isInteger(contestId) ||
+    !Number.isInteger(problemId)
+  ) {
+    notFound();
   }
 
-  const data = await res.json();
+  const contest = await prisma.contest.findUnique({
+    where: {
+      id: contestId,
+    },
+    include: {
+      problems: {
+        where: {
+          problemId,
+        },
+        include: {
+          problem: {
+            include: {
+              testCases: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!contest || contest.problems.length === 0) {
+    notFound();
+  }
+
+  const problem = contest.problems[0].problem;
 
   return (
     <ContestProblemPageContent
-      problem={data.problem}
-      contest={data.contest}
-      contestId={Number(contestid)}
+      problem={problem}
+      contest={contest}
+      contestId={contestId}
     />
   );
 }

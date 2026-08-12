@@ -22,20 +22,22 @@ export default async function ContestPage({
     redirect("/login");
   }
 
-  const url = new URL(
-    `/api/contests/${contestId}`,
-    process.env.NEXT_PUBLIC_APP_URL
-  );
-
-  const res = await fetch(url, {
-    cache: "no-store",
+  const contest = await prisma.contest.findUnique({
+    where: {
+      id: contestId,
+    },
+    include: {
+      problems: {
+        include: {
+          problem: true,
+        },
+      },
+    },
   });
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch contest");
+  if (!contest) {
+    notFound();
   }
-
-  const contest = await res.json();
 
   // Do not allow access to contest problems before the contest starts
   const now = new Date();
@@ -164,7 +166,7 @@ export default async function ContestPage({
                 No problems have been added to this contest.
               </div>
             ) : (
-              contest.problems.map((cp: any, index: number) => (
+              contest.problems.map((cp, index) => (
                 <Link
                   key={cp.problem.id}
                   href={`/contests/${contest.id}/problems/${cp.problem.id}`}

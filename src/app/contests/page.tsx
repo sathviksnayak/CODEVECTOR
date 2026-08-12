@@ -1,21 +1,14 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import JoinButton from "./joinButton";
 
+
 async function getContests() {
-  const url = new URL(
-    "/api/contests",
-    process.env.NEXT_PUBLIC_APP_URL
-  );
-
-  const res = await fetch(url, {
-    cache: "no-store",
+  return prisma.contest.findMany({
+    orderBy: {
+      startTime: "desc",
+    },
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch contests");
-  }
-
-  return res.json();
 }
 
 function getStatus(start: Date, end: Date) {

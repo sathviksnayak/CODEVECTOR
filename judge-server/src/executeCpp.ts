@@ -11,8 +11,8 @@ export interface TestCase {
 }
 
 export interface RunConstraints {
-  timeLimit?: number;   // milliseconds
-  memoryLimit?: number;  // MB
+  timeLimit?: number; // milliseconds
+  memoryLimit?: number; // MB
 }
 
 export interface TestResult {
@@ -21,7 +21,6 @@ export interface TestResult {
   expectedOutput: string;
   actualOutput: string;
   stderr?: string;
-
   executionTime?: number; // milliseconds
   memoryUsed?: number | null; // KB
 }
@@ -97,11 +96,6 @@ export async function executeCppWithTestCases(
 
   /*
    * Run test cases
-   *
-   * IMPORTANT:
-   * The finally block below removes the
-   * compiled executable after ALL test cases
-   * finish, regardless of what happens.
    */
   try {
     for (
@@ -324,18 +318,7 @@ export async function executeCppWithTestCases(
     }
   } finally {
     /*
-     * IMPORTANT:
-     *
      * Delete the compiled executable.
-     *
-     * This is what removes:
-     *
-     * temp/main-123456789
-     *
-     * after every execution.
-     *
-     * It runs even if the test loop
-     * crashes or throws an error.
      */
     await fs.rm(
       path.join(
@@ -365,8 +348,8 @@ export async function executeCppWithTestCases(
   /*
    * Memory isn't being measured yet.
    *
-   * Docker is still enforcing the
-   * memory limit.
+   * Docker is still enforcing
+   * the memory limit.
    */
   const memoryUsed = null;
 

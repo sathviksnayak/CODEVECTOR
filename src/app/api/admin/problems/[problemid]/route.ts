@@ -20,7 +20,7 @@ export async function PUT(
     );
   }
 
-  if (user.role !== "ADMIN") {
+  if (user.role === "USER") {
     return Response.json(
       { error: "Forbidden" },
       { status: 403 }

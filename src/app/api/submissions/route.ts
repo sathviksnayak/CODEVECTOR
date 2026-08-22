@@ -1,7 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { executeCppWithTestCases } from "@/lib/executeCpp";
-import path from "path";
-import fs from "fs/promises";
 import { getUser } from "@/lib/getUser";
 
 export async function POST(req: Request) {
@@ -27,11 +24,12 @@ export async function POST(req: Request) {
    * Contest validation
    */
   if (contestId) {
-    const contest = await prisma.contest.findUnique({
-      where: {
-        id: Number(contestId),
-      },
-    });
+    const contest =
+      await prisma.contest.findUnique({
+        where: {
+          id: Number(contestId),
+        },
+      });
 
     if (!contest) {
       return Response.json(
@@ -72,7 +70,8 @@ export async function POST(req: Request) {
     if (!participant) {
       return Response.json(
         {
-          error: "You have not joined this contest",
+          error:
+            "You have not joined this contest",
         },
         { status: 403 }
       );
@@ -94,7 +93,8 @@ export async function POST(req: Request) {
     if (!contestProblem) {
       return Response.json(
         {
-          error: "Problem does not belong to contest",
+          error:
+            "Problem does not belong to contest",
         },
         { status: 403 }
       );
@@ -104,14 +104,15 @@ export async function POST(req: Request) {
   /*
    * Get problem + test cases
    */
-  const problem = await prisma.problem.findUnique({
-    where: {
-      id: Number(problemId),
-    },
-    include: {
-      testCases: true,
-    },
-  });
+  const problem =
+    await prisma.problem.findUnique({
+      where: {
+        id: Number(problemId),
+      },
+      include: {
+        testCases: true,
+      },
+    });
 
   if (!problem) {
     return Response.json(
@@ -121,53 +122,77 @@ export async function POST(req: Request) {
   }
 
   /*
-   * Create temporary source file
+   * Send submission to judge server.
    */
-  await fs.mkdir(
-    path.join(process.cwd(), "temp"),
-    { recursive: true }
-  );
+  let result;
 
-  const fileName = `submission-${Date.now()}.cpp`;
+  try {
+    const judgeUrl =
+      process.env.JUDGE_SERVER_URL ??
+      "http://localhost:4000";
 
-  const filePath = path.join(
-    process.cwd(),
-    "temp",
-    fileName
-  );
+    const formattedTestCases =
+      problem.testCases.map((tc) => ({
+        input: tc.input,
+        expectedOutput: tc.output,
+      }));
 
-  const relativePath = `temp/${fileName}`;
-
-  await fs.writeFile(filePath, code);
-
-  /*
-   * Execute code
-   */
-  const formattedTestCases =
-    problem.testCases.map((tc) => ({
-      input: tc.input,
-      expectedOutput: tc.output,
-    }));
-
-  const result =
-    await executeCppWithTestCases(
-      relativePath,
-      formattedTestCases,
+    const judgeResponse = await fetch(
+      `${judgeUrl}/execute`,
       {
-        timeLimit: problem.timeLimit,
-        memoryLimit: problem.memoryLimit,
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          code,
+          testCases: formattedTestCases,
+          timeLimit: problem.timeLimit,
+          memoryLimit: problem.memoryLimit,
+        }),
       }
     );
 
-const verdict = result.compileError
-  ? "CE"
-  : result.allPassed
-    ? "AC"
-    : result.results.find(
-        (r) => r.verdict !== "AC"
-      )?.verdict ?? "WA";
+    result = await judgeResponse.json();
+
+    if (!judgeResponse.ok) {
+      return Response.json(
+        result,
+        { status: judgeResponse.status }
+      );
+    }
+
+  } catch (error) {
+    console.error(
+      "Judge server error:",
+      error
+    );
+
+    return Response.json(
+      {
+        error: "Judge server unavailable",
+      },
+      { status: 503 }
+    );
+  }
+
   /*
-   * Save submission
+   * Determine final verdict.
+   */
+  const verdict =
+    result.compileError
+      ? "CE"
+      : result.allPassed
+      ? "AC"
+      : result.results.find(
+          (r: any) =>
+            r.verdict !== "AC"
+        )?.verdict ?? "WA";
+
+  /*
+   * Save submission.
    */
   await prisma.submission.create({
     data: {
@@ -177,8 +202,11 @@ const verdict = result.compileError
       userId: payload.id,
       verdict,
 
-      executionTime: result.executionTime,
-      memoryUsed: result.memoryUsed,
+      executionTime:
+        result.executionTime,
+
+      memoryUsed:
+        result.memoryUsed,
 
       contestId: contestId
         ? Number(contestId)
@@ -186,19 +214,15 @@ const verdict = result.compileError
     },
   });
 
-  /*
-   * Delete temporary file
-   */
-  await fs.unlink(filePath).catch(() => {});
-
   return Response.json(result);
 }
 
-
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
+  const { searchParams } =
+    new URL(req.url);
 
-  const problemId = searchParams.get("problemId");
+  const problemId =
+    searchParams.get("problemId");
 
   if (!problemId) {
     return Response.json(
@@ -207,14 +231,15 @@ export async function GET(req: Request) {
     );
   }
 
-  const submissions = await prisma.submission.findMany({
-    where: {
-      problemId: Number(problemId),
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const submissions =
+    await prisma.submission.findMany({
+      where: {
+        problemId: Number(problemId),
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
   return Response.json(submissions);
 }

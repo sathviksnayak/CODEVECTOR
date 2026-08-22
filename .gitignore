@@ -48,3 +48,4 @@ skills-lock.json
 /src/generated/prisma
 /sample
 /temp
+/judge-server/node_modules

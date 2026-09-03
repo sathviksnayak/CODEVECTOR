@@ -1,6 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import JoinButton from "./joinButton";
+
+export const metadata: Metadata = {
+  title: "Programming Contests",
+  description:
+    "Find programming contests, join competitive coding events, and test your problem-solving skills with CodeVector.",
+};
 
 
 async function getContests() {

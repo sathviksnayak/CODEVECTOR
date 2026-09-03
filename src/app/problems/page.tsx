@@ -1,5 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Programming Problems",
+  description:
+    "Browse coding problems by difficulty and practice problem-solving with CodeVector's online judge.",
+};
 
 async function getProblems() {
   const data= prisma.problem.findMany({

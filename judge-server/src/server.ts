@@ -2,107 +2,118 @@ import express from "express";
 import { executeCppWithTestCases } from "./executeCpp.js";
 import path from "path";
 import fs from "fs/promises";
+import crypto from "crypto";
 
 const app = express();
 
 app.use(express.json({ limit: "1mb" }));
 
+// Bounds for judge constraints. Anything outside these is rejected
+// rather than silently clamped, so a bad request fails loudly
+// instead of quietly running with different limits than asked for.
+const MIN_TIME_LIMIT_MS = 100;
+const MAX_TIME_LIMIT_MS = 10_000;
+const MIN_MEMORY_LIMIT_MB = 16;
+const MAX_MEMORY_LIMIT_MB = 512;
+const MAX_TEST_CASES = 100;
+const MAX_INPUT_BYTES = 64 * 1024; // 64KB per test case input
+
 app.get("/health", (_req, res) => {
-  res.json({
-    status: "ok",
-  });
+  res.json({ status: "ok" });
 });
 
 app.post("/execute", async (req, res) => {
-  let filePath: string | null = null;
+  let jobDir: string | null = null;
 
   try {
-    const {
-      code,
-      testCases,
-      timeLimit,
-      memoryLimit,
-    } = req.body;
+    const { code, testCases, timeLimit, memoryLimit } = req.body;
 
-    if (
-      typeof code !== "string" ||
-      !Array.isArray(testCases)
-    ) {
+    if (typeof code !== "string" || !Array.isArray(testCases)) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    if (testCases.length === 0 || testCases.length > MAX_TEST_CASES) {
       return res.status(400).json({
-        error: "Invalid request",
+        error: `testCases must contain between 1 and ${MAX_TEST_CASES} test cases`,
       });
     }
 
-    /*
-     * Create temp directory.
-     */
-    const tempDir = path.join(
-      process.cwd(),
-      "temp"
+    for (const tc of testCases) {
+      if (
+        typeof tc !== "object" ||
+        tc === null ||
+        typeof tc.input !== "string" ||
+        typeof tc.expectedOutput !== "string"
+      ) {
+        return res.status(400).json({ error: "Invalid test case" });
+      }
+
+      if (
+        Buffer.byteLength(tc.input, "utf8") > MAX_INPUT_BYTES ||
+        Buffer.byteLength(tc.expectedOutput, "utf8") > MAX_INPUT_BYTES
+      ) {
+        return res.status(400).json({
+          error: `each test case's input/expectedOutput must be under ${MAX_INPUT_BYTES} bytes`,
+        });
+      }
+    }
+
+    if (timeLimit !== undefined) {
+      if (
+        typeof timeLimit !== "number" ||
+        !Number.isFinite(timeLimit) ||
+        timeLimit < MIN_TIME_LIMIT_MS ||
+        timeLimit > MAX_TIME_LIMIT_MS
+      ) {
+        return res.status(400).json({
+          error: `timeLimit must be a number between ${MIN_TIME_LIMIT_MS} and ${MAX_TIME_LIMIT_MS} (ms)`,
+        });
+      }
+    }
+
+    if (memoryLimit !== undefined) {
+      if (
+        typeof memoryLimit !== "number" ||
+        !Number.isFinite(memoryLimit) ||
+        memoryLimit < MIN_MEMORY_LIMIT_MB ||
+        memoryLimit > MAX_MEMORY_LIMIT_MB
+      ) {
+        return res.status(400).json({
+          error: `memoryLimit must be a number between ${MIN_MEMORY_LIMIT_MB} and ${MAX_MEMORY_LIMIT_MB} (MB)`,
+        });
+      }
+    }
+
+    const tempDir = path.join(process.cwd(), "temp");
+    await fs.mkdir(tempDir, { recursive: true });
+
+    // Single source of truth for this submission's working directory.
+    // Both the source file and every input file for this job live
+    // here, and it's the only directory mounted into the container.
+    const jobId = `main-${crypto.randomUUID()}`;
+    jobDir = path.join(tempDir, jobId);
+    await fs.mkdir(jobDir, { recursive: true });
+
+    const sourceFileName = "submission.cpp";
+    await fs.writeFile(path.join(jobDir, sourceFileName), code);
+
+    const result = await executeCppWithTestCases(
+      jobDir,
+      sourceFileName,
+      testCases,
+      { timeLimit, memoryLimit }
     );
-
-    await fs.mkdir(tempDir, {
-      recursive: true,
-    });
-
-    /*
-     * Create temporary C++ source file.
-     */
-    const fileName =
-      `submission-${Date.now()}.cpp`;
-
-    filePath = path.join(
-      tempDir,
-      fileName
-    );
-
-    /*
-     * Docker container mounts the project
-     * directory as /app, so this is the
-     * path Docker will use.
-     */
-    const relativePath =
-      `temp/${fileName}`;
-
-    await fs.writeFile(
-      filePath,
-      code
-    );
-
-    /*
-     * Execute submission.
-     */
-    const result =
-      await executeCppWithTestCases(
-        relativePath,
-        testCases,
-        {
-          timeLimit,
-          memoryLimit,
-        }
-      );
 
     return res.json(result);
   } catch (error) {
-    console.error(
-      "Judge error:",
-      error
-    );
-
-    return res.status(500).json({
-      error: "Execution failed",
-    });
+    console.error("Judge error:", error);
+    return res.status(500).json({ error: "Execution failed" });
   } finally {
-    /*
-     * Remove submitted C++ source.
-     *
-     * executeCpp.ts already removes
-     * the executable and test input files.
-     */
-    if (filePath) {
-      await fs.rm(filePath, {
-        force: true,
-      });
+    // Whole submission workspace (source, binary, leftover input
+    // files) is removed here, and only here — the judge function
+    // no longer owns or deletes any part of this directory itself.
+    if (jobDir) {
+      await fs.rm(jobDir, { recursive: true, force: true });
     }
   }
 });
@@ -110,7 +121,5 @@ app.post("/execute", async (req, res) => {
 const PORT = 4000;
 
 app.listen(PORT, () => {
-  console.log(
-    `Judge server running on http://localhost:${PORT}`
-  );
+  console.log(`Judge server running on http://localhost:${PORT}`);
 });

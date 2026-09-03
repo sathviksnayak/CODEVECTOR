@@ -1,7 +1,48 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/getUser";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
+
+const getContest = cache(async (contestId: number) =>
+  prisma.contest.findUnique({
+    where: {
+      id: contestId,
+    },
+    include: {
+      problems: {
+        include: {
+          problem: true,
+        },
+      },
+    },
+  })
+);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ contestid: string }>;
+}): Promise<Metadata> {
+  const { contestid } = await params;
+  const contestId = Number(contestid);
+
+  if (!Number.isInteger(contestId)) {
+    return {};
+  }
+
+  const contest = await getContest(contestId);
+
+  if (!contest) {
+    return {};
+  }
+
+  return {
+    title: contest.title,
+    description: `Join ${contest.title} on CodeVector and compete in ${contest.problems.length} programming problem${contest.problems.length === 1 ? "" : "s"}.`,
+  };
+}
 
 export default async function ContestPage({
   params,
@@ -22,18 +63,7 @@ export default async function ContestPage({
     redirect("/login");
   }
 
-  const contest = await prisma.contest.findUnique({
-    where: {
-      id: contestId,
-    },
-    include: {
-      problems: {
-        include: {
-          problem: true,
-        },
-      },
-    },
-  });
+  const contest = await getContest(contestId);
 
   if (!contest) {
     notFound();

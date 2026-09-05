@@ -194,6 +194,7 @@ export async function POST(req: Request) {
   /*
    * Save submission.
    */
+const submission =
   await prisma.submission.create({
     data: {
       code,
@@ -214,7 +215,13 @@ export async function POST(req: Request) {
     },
   });
 
-  return Response.json(result);
+return Response.json({
+  ...result,
+  submissionId: submission.id,
+  verdict,
+});
+
+ 
 }
 
 export async function GET(req: Request) {

@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -8,83 +7,85 @@ datasource db {
   provider = "postgresql"
 }
 
-
 model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique
-  email    String @unique
-  password String
-  role     Role   @default(USER)
-  banned Boolean @default(false)
-
+  id          Int                  @id @default(autoincrement())
+  username    String               @unique
+  email       String               @unique
+  password    String
+  role        Role                 @default(USER)
+  banned      Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+  contests    ContestParticipant[]
   submissions Submission[]
-  contests ContestParticipant[]
-
-  createdAt DateTime @default(now())
+  hintUsages  ProblemHintUsage[]
 }
+
 model Problem {
-  id Int @id @default(autoincrement())
-
-  title       String
-  statement   String
-  difficulty  Difficulty
-  example     String
-  constraints String
-
-  tags String[] @default([])
-
-  timeLimit   Int @default(1000)
-  memoryLimit Int @default(256)
-
-  submissions Submission[]
+  id              Int              @id @default(autoincrement())
+  title           String
+  statement       String
+  difficulty      Difficulty
+  example         String
+  constraints     String
+  timeLimit       Int              @default(1000)
+  memoryLimit     Int              @default(256)
+  createdAt       DateTime         @default(now())
+  tags            String[]         @default([])
   contestProblems ContestProblem[]
-  testCases TestCase[]
-
-  createdAt DateTime @default(now())
+  submissions     Submission[]
+  testCases       TestCase[]
+  hintUsages      ProblemHintUsage[]
 }
-model Submission {
-  id Int @id @default(autoincrement())
 
-  code String
-  language Language
-  verdict Verdict?
-
-  executionTime Int?
-  memoryUsed Int?
-
-  userId Int
+model ProblemHintUsage {
+  id        String   @id @default(cuid())
+  userId    Int
   problemId Int
 
-  contestId Int?
+  hintsUsed Int      @default(0)
+  hints     String[] @default([])
 
-  user User @relation(fields: [userId], references: [id])
-  problem Problem @relation(fields: [problemId], references: [id])
-  contest Contest? @relation(fields: [contestId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, problemId])
 }
+model Submission {
+  id            Int      @id @default(autoincrement())
+  code          String
+  language      Language
+  verdict       Verdict?
+  executionTime Int?
+  memoryUsed    Int?
+  userId        Int
+  problemId     Int
+  contestId     Int?
+  createdAt     DateTime @default(now())
+  contest       Contest? @relation(fields: [contestId], references: [id])
+  problem       Problem  @relation(fields: [problemId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+}
+
 model Contest {
-  id Int @id @default(autoincrement())
-
-  title String
-  startTime DateTime
-  endTime DateTime
-
-  problems ContestProblem[]
+  id           Int                  @id @default(autoincrement())
+  title        String
+  startTime    DateTime
+  endTime      DateTime
+  createdAt    DateTime             @default(now())
   participants ContestParticipant[]
-  submissions Submission[]
-
-  createdAt DateTime @default(now())
+  problems     ContestProblem[]
+  submissions  Submission[]
 }
 
 model ContestProblem {
   contestId Int
   problemId Int
-
-  points Int @default(100)
-
-  contest Contest @relation(fields: [contestId], references: [id])
-  problem Problem @relation(fields: [problemId], references: [id])
+  points    Int     @default(100)
+  contest   Contest @relation(fields: [contestId], references: [id])
+  problem   Problem @relation(fields: [problemId], references: [id])
 
   @@id([contestId, problemId])
 }
@@ -92,21 +93,29 @@ model ContestProblem {
 model ContestParticipant {
   contestId Int
   userId    Int
-
-  contest Contest @relation(fields: [contestId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
-
-  joinedAt DateTime @default(now())
+  joinedAt  DateTime @default(now())
+  contest   Contest  @relation(fields: [contestId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@id([contestId, userId])
 }
 
+model TestCase {
+  id        Int      @id @default(autoincrement())
+  input     String
+  output    String
+  isHidden  Boolean  @default(false)
+  problemId Int
+  createdAt DateTime @default(now())
+  problem   Problem  @relation(fields: [problemId], references: [id])
+}
 
 enum Difficulty {
   EASY
   MEDIUM
   HARD
 }
+
 enum Verdict {
   PENDING
   AC
@@ -128,19 +137,4 @@ enum Role {
   USER
   ADMIN
   SUPERADMIN
-}
-
-model TestCase {
-  id Int @id @default(autoincrement())
-
-  input String
-  output String
-
-  isHidden Boolean @default(false)
-
-  problemId Int
-
-  problem Problem @relation(fields: [problemId], references: [id])
-
-  createdAt DateTime @default(now())
 }

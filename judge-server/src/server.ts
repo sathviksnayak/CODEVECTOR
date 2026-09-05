@@ -18,6 +18,12 @@ const MAX_MEMORY_LIMIT_MB = 512;
 const MAX_TEST_CASES = 100;
 const MAX_INPUT_BYTES = 64 * 1024; // 64KB per test case input
 
+// Each job can launch a compiler and multiple Docker runtime containers.
+// Keep two jobs active so a single judge instance cannot be overwhelmed by
+// concurrent Docker work; excess requests are rejected instead of queued.
+const MAX_CONCURRENT_JOBS = 2;
+let activeJobs = 0;
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
@@ -36,6 +42,14 @@ app.post("/execute", async (req, res) => {
       error: "Unauthorized",
     });
   }
+
+  if (activeJobs >= MAX_CONCURRENT_JOBS) {
+    return res.status(429).json({
+      error: "Judge is busy",
+    });
+  }
+
+  activeJobs += 1;
 
   let jobDir: string | null = null;
 
@@ -126,8 +140,12 @@ app.post("/execute", async (req, res) => {
     // Whole submission workspace (source, binary, leftover input
     // files) is removed here, and only here — the judge function
     // no longer owns or deletes any part of this directory itself.
-    if (jobDir) {
-      await fs.rm(jobDir, { recursive: true, force: true });
+    try {
+      if (jobDir) {
+        await fs.rm(jobDir, { recursive: true, force: true });
+      }
+    } finally {
+      activeJobs -= 1;
     }
   }
 });

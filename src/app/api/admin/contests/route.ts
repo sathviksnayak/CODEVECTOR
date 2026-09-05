@@ -12,6 +12,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (
+      payload.role !== "ADMIN" &&
+      payload.role !== "SUPERADMIN"
+    ) {
+      return Response.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     const {

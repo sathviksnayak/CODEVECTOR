@@ -1,7 +1,27 @@
 import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/getUser";
 
 export async function POST(req: Request) {
   try {
+    const user = await getUser();
+
+    if (!user) {
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "SUPERADMIN"
+    ) {
+      return Response.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     const {

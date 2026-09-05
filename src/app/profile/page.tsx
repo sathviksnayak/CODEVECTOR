@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
+import { getUser } from "@/lib/getUser";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -30,16 +29,9 @@ function getVerdictStyle(verdict: string | null) {
 }
 
 export default async function Page() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  const currentUser = await getUser();
 
-  if (!token) {
-    redirect("/login");
-  }
-
-  const payload = verifyToken(token);
-
-  if (!payload) {
+  if (!currentUser) {
     redirect("/login");
   }
 
@@ -48,7 +40,7 @@ export default async function Page() {
    */
   const user = await prisma.user.findUnique({
     where: {
-      id: payload.id,
+      id: currentUser.id,
     },
 
     select: {
@@ -84,20 +76,20 @@ export default async function Page() {
   ] = await Promise.all([
     prisma.submission.count({
       where: {
-        userId: payload.id,
+        userId: currentUser.id,
       },
     }),
 
     prisma.submission.count({
       where: {
-        userId: payload.id,
+        userId: currentUser.id,
         verdict: "AC",
       },
     }),
 
     prisma.submission.findMany({
       where: {
-        userId: payload.id,
+        userId: currentUser.id,
         verdict: "AC",
       },
 

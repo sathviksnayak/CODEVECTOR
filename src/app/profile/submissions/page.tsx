@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
+import { getUser } from "@/lib/getUser";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -30,22 +29,15 @@ function getVerdictStyle(verdict: string | null) {
 }
 
 export default async function SubmissionsPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  const user = await getUser();
 
-  if (!token) {
-    redirect("/login");
-  }
-
-  const payload = verifyToken(token);
-
-  if (!payload) {
+  if (!user) {
     redirect("/login");
   }
 
   const submissions = await prisma.submission.findMany({
     where: {
-      userId: payload.id,
+      userId: user.id,
     },
     include: {
       problem: true,

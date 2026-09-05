@@ -1,7 +1,8 @@
 import ContestProblemPageContent from "./ContestProblemPageContent";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { getUser } from "@/lib/getUser";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 const getContestProblem = cache(
@@ -47,10 +48,36 @@ export async function generateMetadata({
     return {};
   }
 
+  const user = await getUser();
+
+  if (!user) {
+    return {};
+  }
+
   const contest = await getContestProblem(contestId, problemId);
   const contestProblem = contest?.problems[0];
 
   if (!contest || !contestProblem) {
+    return {};
+  }
+
+  const now = new Date();
+
+  if (now < contest.startTime || now >= contest.endTime) {
+    return {};
+  }
+
+  const participant =
+    await prisma.contestParticipant.findUnique({
+      where: {
+        contestId_userId: {
+          contestId,
+          userId: user.id,
+        },
+      },
+    });
+
+  if (!participant) {
     return {};
   }
 
@@ -88,10 +115,36 @@ async function ContestProblemPage({
     notFound();
   }
 
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const contest = await getContestProblem(contestId, problemId);
 
   if (!contest || contest.problems.length === 0) {
     notFound();
+  }
+
+  const now = new Date();
+
+  if (now < contest.startTime || now >= contest.endTime) {
+    redirect(`/contests/${contestId}`);
+  }
+
+  const participant =
+    await prisma.contestParticipant.findUnique({
+      where: {
+        contestId_userId: {
+          contestId,
+          userId: user.id,
+        },
+      },
+    });
+
+  if (!participant) {
+    redirect(`/contests/${contestId}`);
   }
 
   const problem = contest.problems[0].problem;

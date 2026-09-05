@@ -130,6 +130,15 @@ export async function POST(req: Request) {
     const judgeUrl =
       process.env.JUDGE_SERVER_URL ??
       "http://localhost:4000";
+    const judgeSecret =
+      process.env.JUDGE_SERVER_SECRET;
+
+    if (!judgeSecret) {
+      return Response.json(
+        { error: "Judge server unavailable" },
+        { status: 503 }
+      );
+    }
 
     const formattedTestCases =
       problem.testCases.map((tc) => ({
@@ -144,6 +153,7 @@ export async function POST(req: Request) {
 
         headers: {
           "Content-Type": "application/json",
+          "x-judge-secret": judgeSecret,
         },
 
         body: JSON.stringify({

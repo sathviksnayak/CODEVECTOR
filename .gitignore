@@ -49,3 +49,4 @@ skills-lock.json
 /sample
 /temp
 /judge-server/node_modules
+/judge-server/.env

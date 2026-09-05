@@ -23,6 +23,20 @@ app.get("/health", (_req, res) => {
 });
 
 app.post("/execute", async (req, res) => {
+  const judgeSecret = process.env.JUDGE_SERVER_SECRET;
+
+  if (!judgeSecret) {
+    return res.status(503).json({
+      error: "Judge server authentication is not configured",
+    });
+  }
+
+  if (req.header("x-judge-secret") !== judgeSecret) {
+    return res.status(401).json({
+      error: "Unauthorized",
+    });
+  }
+
   let jobDir: string | null = null;
 
   try {

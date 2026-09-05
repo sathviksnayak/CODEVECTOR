@@ -31,7 +31,11 @@ export async function POST(req: Request) {
       id: Number(problemId),
     },
     include: {
-      testCases: true,
+      testCases: {
+        where: {
+          isHidden: false,
+        },
+      },
     },
   });
 

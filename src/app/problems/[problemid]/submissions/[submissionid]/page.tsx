@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { getUser } from "@/lib/getUser";
+import { notFound, redirect } from "next/navigation";
 
 export default async function Page({
   params,
@@ -12,10 +13,17 @@ export default async function Page({
   const { problemid, submissionid } =
     await params;
 
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const submission =
     await prisma.submission.findUnique({
       where: {
         id: Number(submissionid),
+        userId: user.id,
       },
     });
 

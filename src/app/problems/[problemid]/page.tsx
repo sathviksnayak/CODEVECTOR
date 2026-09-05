@@ -1,6 +1,7 @@
 import ProblemPageContent from "./ProblemPageContent";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/getUser";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
@@ -10,7 +11,11 @@ const getProblem = cache(async (problemId: number) =>
       id: problemId,
     },
     include: {
-      testCases: true,
+      testCases: {
+        where: {
+          isHidden: false,
+        },
+      },
     },
   })
 );
@@ -76,14 +81,23 @@ export default async function Page({
   }
 
 
-  const submissions = await prisma.submission.findMany({
-    where: {
-      problemId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const user = await getUser();
+
+  const submissions = user
+    ? await prisma.submission.findMany({
+        where: {
+          problemId,
+          userId: user.id,
+        },
+        select: {
+          id: true,
+          verdict: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      })
+    : [];
 
 
   return (

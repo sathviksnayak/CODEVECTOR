@@ -18,7 +18,11 @@ const getContestProblem = cache(
           include: {
             problem: {
               include: {
-                testCases: true,
+                testCases: {
+                  where: {
+                    isHidden: false,
+                  },
+                },
               },
             },
           },

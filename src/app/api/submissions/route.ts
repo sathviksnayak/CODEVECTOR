@@ -164,6 +164,22 @@ export async function POST(req: Request) {
       );
     }
 
+    result.results = result.results.map(
+      (testResult: any, index: number) => {
+        if (!problem.testCases[index]?.isHidden) {
+          return testResult;
+        }
+
+        return {
+          ...testResult,
+          input: "",
+          expectedOutput: "",
+          actualOutput: "",
+          stderr: "",
+        };
+      }
+    );
+
   } catch (error) {
     console.error(
       "Judge server error:",
@@ -238,10 +254,31 @@ export async function GET(req: Request) {
     );
   }
 
+  const user = await getUser();
+
+  if (!user) {
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   const submissions =
     await prisma.submission.findMany({
       where: {
         problemId: Number(problemId),
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        language: true,
+        verdict: true,
+        executionTime: true,
+        memoryUsed: true,
+        userId: true,
+        problemId: true,
+        contestId: true,
+        createdAt: true,
       },
       orderBy: {
         createdAt: "desc",

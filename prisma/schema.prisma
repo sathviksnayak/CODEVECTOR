@@ -63,6 +63,7 @@ model Submission {
   userId        Int
   problemId     Int
   contestId     Int?
+  submittedAt   DateTime
   createdAt     DateTime @default(now())
   contest       Contest? @relation(fields: [contestId], references: [id])
   problem       Problem  @relation(fields: [problemId], references: [id])

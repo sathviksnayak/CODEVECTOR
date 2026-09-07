@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/getUser";
 
 export async function POST(req: Request) {
+  const submittedAt = new Date();
   const body = await req.json();
 
   const payload = await getUser();
@@ -38,16 +39,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const now = new Date();
-
-    if (now < contest.startTime) {
+    if (submittedAt < contest.startTime) {
       return Response.json(
         { error: "Contest has not started" },
         { status: 403 }
       );
     }
 
-    if (now > contest.endTime) {
+    if (submittedAt >= contest.endTime) {
       return Response.json(
         { error: "Contest has ended" },
         { status: 403 }
@@ -238,6 +237,8 @@ const submission =
       contestId: contestId
         ? Number(contestId)
         : null,
+
+      submittedAt,
     },
   });
 

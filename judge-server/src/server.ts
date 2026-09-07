@@ -3,6 +3,8 @@ import { executeCppWithTestCases } from "./executeCpp.js";
 import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
+import "dotenv/config";
+
 
 const app = express();
 
@@ -30,7 +32,7 @@ app.get("/health", (_req, res) => {
 
 app.post("/execute", async (req, res) => {
   const judgeSecret = process.env.JUDGE_SERVER_SECRET;
-
+  console.log("Judge secret:", judgeSecret ? "configured" : "not configured");
   if (!judgeSecret) {
     return res.status(503).json({
       error: "Judge server authentication is not configured",

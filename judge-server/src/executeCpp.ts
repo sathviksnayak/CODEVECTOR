@@ -56,9 +56,9 @@ export async function executeCppWithTestCases(
   const executableName = "main";
 
   // Run stage needs GNU time (/usr/bin/time) for peak-RSS
-  // measurement, which plain gcc:latest doesn't ship. Build this
+  // measurement, which plain gcc:16.1.0 doesn't ship. Build this
   // once with judge.Dockerfile. Compile stage doesn't need it.
-  const runImage = "cpp-judge:latest";
+  const runImage = "cpp-judge:16.1.0";
   const memoryLimitKb = memoryLimitMb * 1024;
 
   /*
@@ -68,13 +68,15 @@ export async function executeCppWithTestCases(
     const compileCommand =
       `docker run --rm ` +
       `--network none ` +
+      `--memory=${memoryLimitMb}m ` +
+      `--memory-swap=${memoryLimitMb}m ` +
       `--cpus=1 ` +
       `--pids-limit=64 ` +
       `--cap-drop=ALL ` +
       `--security-opt=no-new-privileges ` +
       `-v "${jobDir}:/app" ` +
       `-w /app ` +
-      `gcc:latest ` +
+      `gcc:16.1.0 ` +
       `bash -c "g++ ${sourceFileName} -O2 -std=c++17 -o ${executableName}"`;
 
     await execAsync(compileCommand, { timeout: 15000 });

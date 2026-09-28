@@ -3,14 +3,19 @@ import Link from "next/link";
 type Submission = {
   id: number;
   verdict: string;
+  aiAnalysis?: {
+    status: string;
+  } | null;
 };
 
 export default function SubmissionTab({
   submissions,
   problemId,
+  onAnalyze,
 }: {
   submissions: Submission[];
   problemId: number;
+  onAnalyze: (submissionId: number) => void;
 }) {
   if (!Array.isArray(submissions) || submissions.length === 0) {
     return (
@@ -39,6 +44,9 @@ export default function SubmissionTab({
       case "RE":
         return "bg-purple-500/10 text-purple-400 border-purple-500/20";
 
+      case "CE":
+        return "bg-red-500/10 text-red-400 border-red-500/20";
+
       default:
         return "bg-gray-500/10 text-gray-400 border-gray-500/20";
     }
@@ -58,27 +66,47 @@ export default function SubmissionTab({
 
       <div className="space-y-3">
         {submissions.map((submission) => (
-          <Link
+          <div
             key={submission.id}
-            href={`/problems/${problemId}/submissions/${submission.id}`}
-            className="block rounded-lg border border-gray-800 bg-gray-950 p-5 transition hover:border-gray-600 hover:bg-gray-900"
+            className="rounded-lg border border-gray-800 bg-gray-950 p-5 transition hover:border-gray-600 hover:bg-gray-900"
           >
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+
+              {/* Submission */}
+              <Link
+                href={`/problems/${problemId}/submissions/${submission.id}`}
+                className="flex-1"
+              >
                 <p className="text-sm text-gray-500">
                   Submission #{submission.id}
                 </p>
-              </div>
+              </Link>
 
-              <span
-                className={`rounded-full border px-3 py-1 text-xs font-medium ${verdictStyle(
-                  submission.verdict
-                )}`}
-              >
-                {submission.verdict}
-              </span>
+              <div className="flex items-center gap-3">
+
+                {/* Verdict */}
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${verdictStyle(
+                    submission.verdict
+                  )}`}
+                >
+                  {submission.verdict}
+                </span>
+
+                {/* AI Analysis */}
+                {submission.verdict === "AC" && (
+                  <button
+                    onClick={() => onAnalyze(submission.id)}
+                    className="rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 transition hover:bg-blue-500/20 hover:text-blue-300"
+                  >
+                    {submission.aiAnalysis?.status === "COMPLETED"
+                      ? "View Analysis"
+                      : "Analyze"}
+                  </button>
+                )}
+              </div>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

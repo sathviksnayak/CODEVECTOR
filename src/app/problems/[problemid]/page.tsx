@@ -83,21 +83,26 @@ export default async function Page({
 
   const user = await getUser();
 
-  const submissions = user
-    ? await prisma.submission.findMany({
-        where: {
-          problemId,
-          userId: user.id,
+const submissions = user
+  ? await prisma.submission.findMany({
+      where: {
+        problemId,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        verdict: true,
+        aiAnalysis: {
+          select: {
+            status: true,
+          },
         },
-        select: {
-          id: true,
-          verdict: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      })
-    : [];
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+  : [];
 
 
   return (
